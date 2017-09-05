@@ -17,9 +17,13 @@ public class TestTest {
 //
 //    }
 
-        @Property
-    public void cont(@From(PersonGenerator.class) Person p1){
-        assertTrue((p1.getAge() + p1.getAge()) >= 0);
 
+
+
+    @Property
+    public void cont(@From(PersonGenerator.class) Person p1) {
+        System.out.println("In calss");
+        System.out.println(p1);
+        assertTrue((p1.getAge() + p1.getAge()) >= 0);
     }
 }

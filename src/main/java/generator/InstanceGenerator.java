@@ -1,12 +1,14 @@
 package generator;
 
 
-import instantiator.*;
+import instantiator.DefaultPrimitiveInstantiator;
+import instantiator.EmptySetStrategy;
+import instantiator.InstantiationStrategy;
+import instantiator.PrimitiveInstantiator;
 import org.javatuples.Pair;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -265,6 +267,10 @@ public class InstanceGenerator {
 
     public <T> void addClassInstStrategy(InstantiationStrategy<T> strategy, Class<T> clazz){
         this.classInstMap.put(clazz,strategy);
+    }
+
+    public <T> void addPrimStratInClass(Class<T> clazz, PrimitiveInstantiator primStrat){
+        this.primitiveInClassInstMap.put(clazz,primStrat);
     }
 
     public Map<Class, InstantiationStrategy> getClassInstMap() {
