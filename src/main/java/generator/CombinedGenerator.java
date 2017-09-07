@@ -4,6 +4,7 @@ import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import instantiator.InstantiationStrategy;
+import instantiator.PrimitiveInstantiator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,8 @@ public abstract class CombinedGenerator<T> extends Generator<T> {
     protected CombinedGenerator(Class<T> type) {
         super(type);
         this.type = type;
+        this.cornerCaseCreator = InstanceCreatorCornerCase.defaultCornerCase();
+        this.normalCaseCreator = InstanceCreatorNormal.defaultNormalCase();
     }
 
     public CombinedGenerator<T> withCornerCaseCreator(InstanceCreatorCornerCase creator){
@@ -30,9 +33,15 @@ public abstract class CombinedGenerator<T> extends Generator<T> {
         return this;
     }
 
-    public CombinedGenerator<T> withClassInstStat(InstantiationStrategy<T> strat, Class<T> clazz) {
+    public <U> CombinedGenerator<T> withClassInstStat(InstantiationStrategy<U> strat, Class<U> clazz) {
         this.cornerCaseCreator = cornerCaseCreator.withClassInstStrategy(strat,clazz);
         this.normalCaseCreator = normalCaseCreator.withClassInstStrategy(strat,clazz);
+        return this;
+    }
+
+    public CombinedGenerator<T> withPrimStar(PrimitiveInstantiator primStar){
+        this.cornerCaseCreator = cornerCaseCreator.withDefaultPrimStrat(primStar);
+        this.normalCaseCreator = normalCaseCreator.withDefaultPrimStrat(primStar);
         return this;
     }
 
@@ -56,7 +65,7 @@ public abstract class CombinedGenerator<T> extends Generator<T> {
             this.iterator = this.iterator+1;
             return res;
         }
-        return normalCaseCreator.createSingleInstanceOfClass(type);
+        return normalCaseCreator.createSingleInstanceOfClass(type, random);
     }
 
     public InstanceCreatorCornerCase getCornerCaseCreator() {
@@ -65,5 +74,9 @@ public abstract class CombinedGenerator<T> extends Generator<T> {
 
     public void setCornerCaseCreator(InstanceCreatorCornerCase cornerCaseCreator) {
         this.cornerCaseCreator = cornerCaseCreator;
+    }
+
+    public void setNormalCaseCreator(InstanceCreatorNormal normalCaseCreator) {
+        this.normalCaseCreator = normalCaseCreator;
     }
 }

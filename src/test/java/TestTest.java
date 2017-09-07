@@ -29,10 +29,13 @@ public class TestTest {
         assertTrue((p1.getAge() + p1.getAge()) >= Integer.MIN_VALUE);
     }
 
-    @Property(trials = 7, mode = Mode.EXHAUSTIVE)
+    @Property(trials = 10, mode = Mode.EXHAUSTIVE)
     public void exhaust(@From(PersonGenerator.class) Person p1, @From(PersonGenerator.class) Person p2){
-        System.out.println(String.format("%s %s", p1.toString(), p2.toString()));
-        assertTrue((p1.getAge() + p2.getAge()) > -1);
+        System.out.println(String.format("P1: %s \n P2: %s", p1.toString(), p2.toString()));
+        if(p1.getAge() < 100 && p2.getAge()< 100){
+            assertTrue((p1.getAge() + p2.getAge()) > -1);
+        }
+
     }
 
     @Property

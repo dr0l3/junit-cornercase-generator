@@ -25,7 +25,7 @@ public abstract class NormalGenerator<T> extends Generator<T> {
             this.normalCaseCreator = InstanceCreatorNormal.defaultNormalCase(random);
         }
 
-        return normalCaseCreator.createSingleInstanceOfClass(type);
+        return normalCaseCreator.createSingleInstanceOfClass(type, random);
     }
 
 

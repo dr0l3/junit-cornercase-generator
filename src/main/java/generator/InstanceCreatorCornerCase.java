@@ -302,6 +302,11 @@ public class InstanceCreatorCornerCase extends Creator{
         return this;
     }
 
+    public InstanceCreatorCornerCase withDefaultPrimStrat(PrimitiveInstantiator primStrat){
+        setDefaultPrimitiveInstantiator(primStrat);
+        return this;
+    }
+
     public InstanceCreatorCornerCase withAllowNull(boolean allowNull){
         setAllowNull(allowNull);
         return this;

@@ -7,9 +7,11 @@ import instantiator.NormalCasePrimitiveInstantiator;
 import instantiator.PrimitiveInstantiator;
 import org.javatuples.Pair;
 
+import java.awt.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,11 +29,22 @@ public class InstanceCreatorNormal extends Creator {
         return creator;
     }
 
-    public <T> Object createSingleInstanceOfField(Field field, Class<T> clazz){
+    public static InstanceCreatorNormal defaultNormalCase(){
+        InstanceCreatorNormal creator = new InstanceCreatorNormal();
+        SourceOfRandomness r = new SourceOfRandomness(new Random());
+        creator.setSourceOfRandomness(r);
+        creator.setEmptyDefaults();
+        creator.setDefaultPrimitiveInstantiator(new NormalCasePrimitiveInstantiator(r));
+        creator.setAllowNull(false);
+        return creator;
+    }
+
+    public <T> Object createSingleInstanceOfField(Field field, Class<T> clazz, SourceOfRandomness randomness){
+        this.sourceOfRandomness = randomness;
         Class<?> type = field.getType();
         field.getGenericType();
         if(type.isEnum()) {
-            int index = sourceOfRandomness.nextInt(0,type.getEnumConstants().length-1);
+            int index = getEffectiveRandom().nextInt(0,type.getEnumConstants().length-1);
             return type.getEnumConstants()[index];
         } else if(type.equals(Integer.TYPE) || type.equals(Integer.class)) {
             return handlePrimitiveInt(field,clazz);
@@ -58,16 +71,16 @@ public class InstanceCreatorNormal extends Creator {
         }
 
         try {
-            return createSingleInstanceOfClass(type);
+            return createSingleInstanceOfClass(type, randomness);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return Collections.emptySet();
+        System.out.println("cant find instance for field" + field.toString());
+        return null;
     }
 
-    public <T> T createSingleInstanceOfClass(Class<T>  clazz){
+    public <T> T createSingleInstanceOfClass(Class<T>  clazz, SourceOfRandomness randomness){
         if(visiting.contains(clazz)){
-            System.out.println("recurive");
             return null; // TODO: 07/09/2017 What to do here?
         }
         visiting.add(clazz);
@@ -78,6 +91,7 @@ public class InstanceCreatorNormal extends Creator {
 
                 List<T> possibles = new ArrayList<>(strategy.createFrom());
                 Collections.shuffle(possibles);
+                visiting.remove(clazz);
                 return possibles.get(0); // TODO: 07/09/2017 No possibles?
             }
 
@@ -90,7 +104,7 @@ public class InstanceCreatorNormal extends Creator {
 
 
             Map<Field,?> valuesByField = filtered.stream()
-                    .map(field -> Pair.with(field, createSingleInstanceOfField(field, clazz)))
+                    .map(field -> Pair.with(field, createSingleInstanceOfField(field, clazz,randomness)))
                     .collect(Collectors.toMap(Pair::getValue0, Pair::getValue1));
 
             T inst = clazz.newInstance();
@@ -125,7 +139,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return sourceOfRandomness.nextByte(Byte.MIN_VALUE, Byte.MAX_VALUE);
+        return defaultPrimitiveInstantiator.getByteVals().iterator().next();
     }
 
     private <T> Object handlePrimitiveBool(Field field, Class<T> clazz) {
@@ -142,7 +156,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return sourceOfRandomness.nextBoolean();
+        return defaultPrimitiveInstantiator.getBoolVals().iterator().next();
     }
 
     private <T> Object handlePrimitiveShort(Field field, Class<T> clazz) {
@@ -159,7 +173,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return sourceOfRandomness.nextShort(Short.MIN_VALUE, Short.MAX_VALUE);
+        return defaultPrimitiveInstantiator.getShortVals().iterator().next();
     }
 
     private <T> Object handlePrimitiveLong(Field field, Class<T> clazz) {
@@ -176,7 +190,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return sourceOfRandomness.nextLong(Long.MIN_VALUE, Long.MAX_VALUE);
+        return defaultPrimitiveInstantiator.getLongVals().iterator().next();
     }
 
     private <T> Object handlePrimitiveFloat(Field field, Class<T> clazz) {
@@ -193,7 +207,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return sourceOfRandomness.nextFloat(Float.MIN_VALUE, Float.MAX_VALUE);
+        return defaultPrimitiveInstantiator.getFloatVals().iterator().next();
     }
 
     private <T> Object handlePrimitiveDouble(Field field, Class<T> clazz) {
@@ -210,7 +224,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return sourceOfRandomness.nextDouble(Double.MIN_VALUE, Double.MAX_VALUE);
+        return defaultPrimitiveInstantiator.getDoubleVals().iterator().next();
     }
     private <T> Object handlePrimitiveInt(Field field, Class<T> clazz) {
         String fieldName = field.getName();
@@ -226,7 +240,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return sourceOfRandomness.nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
+        return defaultPrimitiveInstantiator.getIntVals().iterator().next();
     }
 
     public <T> InstanceCreatorNormal withClassInstStrategy(InstantiationStrategy<T> strategy, Class<T> clazz){
@@ -239,6 +253,19 @@ public class InstanceCreatorNormal extends Creator {
         return this;
     }
 
+    public InstanceCreatorNormal withDefaultPrimStrat(PrimitiveInstantiator primStrat){
+        setDefaultPrimitiveInstantiator(primStrat);
+        return this;
+    }
+
+    private SourceOfRandomness getEffectiveRandom(){
+        if(this.sourceOfRandomness != null){
+            return this.sourceOfRandomness;
+        } else {
+            this.sourceOfRandomness = new SourceOfRandomness(new Random());
+            return sourceOfRandomness;
+        }
+    }
 
     public Random getRandom() {
         return random;
@@ -255,4 +282,5 @@ public class InstanceCreatorNormal extends Creator {
     public void setSourceOfRandomness(SourceOfRandomness sourceOfRandomness) {
         this.sourceOfRandomness = sourceOfRandomness;
     }
+
 }
