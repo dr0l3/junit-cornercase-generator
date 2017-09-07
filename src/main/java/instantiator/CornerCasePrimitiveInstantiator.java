@@ -3,6 +3,7 @@ package instantiator;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class CornerCasePrimitiveInstantiator implements PrimitiveInstantiator {
@@ -77,6 +78,16 @@ public class CornerCasePrimitiveInstantiator implements PrimitiveInstantiator {
         inst.setLongVals(Constants.longVals.stream().filter(b -> b >= 0).collect(Collectors.toSet()));
         inst.setIntVals(Constants.intVals.stream().filter(b -> b >= 0).collect(Collectors.toSet()));
         inst.setDoubleVals(Constants.doubleVals.stream().filter(b -> b >= 0).collect(Collectors.toSet()));
+        return inst;
+    }
+
+    public static PrimitiveInstantiator fromPredicate(Predicate<? super Number> predicate){
+        CornerCasePrimitiveInstantiator inst = new CornerCasePrimitiveInstantiator();
+        inst.setByteVals(Constants.byteVals.stream().filter(predicate).collect(Collectors.toSet()));
+        inst.setShortVals(Constants.shortVals.stream().filter(predicate).collect(Collectors.toSet()));
+        inst.setLongVals(Constants.longVals.stream().filter(predicate).collect(Collectors.toSet()));
+        inst.setIntVals(Constants.intVals.stream().filter(predicate).collect(Collectors.toSet()));
+        inst.setDoubleVals(Constants.doubleVals.stream().filter(predicate).collect(Collectors.toSet()));
         return inst;
     }
 
