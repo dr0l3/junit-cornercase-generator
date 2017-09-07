@@ -2,8 +2,12 @@ group 'droletours'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'idea'
 
 sourceCompatibility = 1.8
+
+mainClassName = 'example.Main'
 
 repositories {
     mavenCentral()
@@ -13,5 +17,17 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     compile 'org.javatuples:javatuples:1.2'
     compile 'com.pholser:junit-quickcheck-core:0.8-alpha-7'
-    compile 'com.pholser:junit-quickcheck-generator:0.8-alpha-7'
+    compile group: 'com.pholser', name: 'junit-quickcheck-generators', version: '0.8-alpha-7'
+
+}
+
+test {
+    executable 'javaw'
+    testLogging {
+        events "passed", "skipped", "failed"
+        showExceptions true
+        exceptionFormat "full"
+        showCauses true
+        showStackTraces true
+    }
 }

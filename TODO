@@ -5,3 +5,10 @@
     - Set
     - Map
     - Array
+- interface/abstract classes [advanced feature]
+- ergonimics
+    - common instantiator (always positive, always negative, fixed number of decimals, ranges etc)
+
+
+Reasons
+- InstantiatorStrategy > Set<T> -> Cant make sets of primitives

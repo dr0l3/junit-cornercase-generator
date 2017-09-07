@@ -1,10 +1,8 @@
 package generator;
 
 
-import instantiator.DefaultPrimitiveInstantiator;
-import instantiator.EmptySetStrategy;
-import instantiator.InstantiationStrategy;
-import instantiator.PrimitiveInstantiator;
+import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import instantiator.*;
 import org.javatuples.Pair;
 
 import java.lang.reflect.Field;
@@ -13,29 +11,47 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class InstanceGenerator {
-    private Map<Class, InstantiationStrategy> classInstMap;
-    private Map<Pair<Class, Class>,InstantiationStrategy> classInClassInstMap;
-    private Map<Pair<Class, String>,InstantiationStrategy> fieldInClassInstMap;
-    private Map<Class, PrimitiveInstantiator> primitiveInClassInstMap;
-    private Map<Class, Boolean> allowNullMap;
-    private Set<Class> visited;
+public class InstanceCreatorCornerCase extends Creator{
 
-    public InstanceGenerator() {
-        classInstMap = new HashMap<>();
-        classInClassInstMap = new HashMap<>();
-        fieldInClassInstMap = new HashMap<>();
-        primitiveInClassInstMap = new HashMap<>();
-        allowNullMap = new HashMap<>();
-        visited = new HashSet<>();
+    public static InstanceCreatorCornerCase defaultNormalCase(SourceOfRandomness randomness){
+        InstanceCreatorCornerCase creator = new InstanceCreatorCornerCase();
+        creator.setEmptyDefaults();
+        creator.setDefaultPrimitiveInstantiator(new NormalCasePrimitiveInstantiator(randomness));
+        creator.setAllowNull(false);
+        return creator;
     }
 
+    public static InstanceCreatorCornerCase defaultCornerCase(){
+        InstanceCreatorCornerCase creator = new InstanceCreatorCornerCase();
+        creator.setEmptyDefaults();
+        creator.setDefaultPrimitiveInstantiator(new CornerCasePrimitiveInstantiator());
+        creator.setAllowNull(true);
+        return creator;
+    }
+
+    public static InstanceCreatorCornerCase nonNegativeCornerCase(){
+        InstanceCreatorCornerCase creator = new InstanceCreatorCornerCase();
+        creator.setEmptyDefaults();
+        creator.setDefaultPrimitiveInstantiator(CornerCasePrimitiveInstantiator.nonNegative());
+        creator.setAllowNull(true);
+        return creator;
+    }
+
+    private InstanceCreatorCornerCase() {
+        super();
+    }
+
+    public InstanceCreatorCornerCase(PrimitiveInstantiator defaultPrimitiveInstantiator) {
+        setEmptyDefaults();
+        this.defaultPrimitiveInstantiator = defaultPrimitiveInstantiator;
+    }
 
     public <T,U> Set<T> createCornerCasesForClass(Class<T> clazz, Class<U> parent){
-        if(visited.contains(clazz)){
+        if(visiting.contains(clazz)){
             return new HashSet<>();
         }
-        System.out.println("Creating corner clases for class: " + clazz.toString());
+        visiting.add(clazz);
+//        System.out.println("Creating corner clases for class: " + clazz.toString());
         try {
             boolean zeroArgConstructors = Stream.of(clazz.getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
             if(!zeroArgConstructors){
@@ -74,7 +90,6 @@ public class InstanceGenerator {
                 }
                 res.add(inst);
             }
-            visited.add(clazz);
             return res;
         } catch (Exception e){
             e.printStackTrace();
@@ -82,18 +97,17 @@ public class InstanceGenerator {
         }
     }
 
+
     public <T> Set<?> createCornerCasesForField(Field field, Class<T> clazz){
         Class<?> type = field.getType();
         field.getGenericType();
-
         if(type.isEnum()) {
             return new HashSet<>(Arrays.asList(type.getEnumConstants()));
         } else if(type.equals(Integer.TYPE)) {
-            Set<?> res = handlePrimitiveInteger(field,clazz);
-            return res;
+            return handlePrimitiveInteger(field,clazz);
         } else if (type.equals(Integer.class)){
             Set<?> res = handlePrimitiveInteger(field,clazz);
-            if(allowNullMap.getOrDefault(clazz,true)){
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
                 res.add(null);
             }
             return res;
@@ -101,7 +115,7 @@ public class InstanceGenerator {
             return handlePrimitiveLong(field, clazz);
         } else if(type.equals(Long.class)) {
             Set<?> res = handlePrimitiveLong(field,clazz);
-            if(allowNullMap.getOrDefault(clazz,true)){
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
                 res.add(null);
             }
             return res;
@@ -109,7 +123,7 @@ public class InstanceGenerator {
             return handlePrimitiveDouble(field, clazz);
         } else if(type.equals(Double.class)) {
             Set<?> res = handlePrimitiveDouble(field,clazz);
-            if(allowNullMap.getOrDefault(clazz,true)){
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
                 res.add(null);
             }
             return res;
@@ -117,7 +131,7 @@ public class InstanceGenerator {
             return handlePrimitiveFloat(field, clazz);
         } else if(type.equals(Float.class)) {
             Set<?> res = handlePrimitiveFloat(field,clazz);
-            if(allowNullMap.getOrDefault(clazz,true)){
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
                 res.add(null);
             }
             return res;
@@ -125,7 +139,7 @@ public class InstanceGenerator {
             return handlePrimitiveBool(field, clazz);
         } else if (type.equals(Boolean.class)){
             Set<?> res = handlePrimitiveBool(field,clazz);
-            if(allowNullMap.getOrDefault(clazz,true)){
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
                 res.add(null);
             }
             return res;
@@ -133,7 +147,7 @@ public class InstanceGenerator {
             return handlePrimitiveByte(field, clazz);
         } else if (type.equals(Byte.class)){
             Set<?> res = handlePrimitiveByte(field,clazz);
-            if(allowNullMap.getOrDefault(clazz,true)){
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
                 res.add(null);
             }
             return res;
@@ -141,32 +155,44 @@ public class InstanceGenerator {
             return handlePrimitiveShort(field, clazz);
         } else if (type.equals(Short.class)){
             Set<?> res = handlePrimitiveShort(field,clazz);
-            if(allowNullMap.getOrDefault(clazz,true)){
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
                 res.add(null);
             }
             return res;
         } else if(type.equals(String.class)) {
-            return new HashSet<>(Arrays.asList(java.util.UUID.randomUUID().toString(), "", null));
+            HashSet<String> res = new HashSet<>(Arrays.asList(java.util.UUID.randomUUID().toString(), ""));
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
+                res.add(null);
+            }
+            return res;
         } else if(type.equals(List.class)){
             HashSet<List<?>> res = new HashSet<>();
-            res.add(null);
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
+                res.add(null);
+            }
             res.add(new ArrayList<>());
             return res;
         } else if(type.equals(Set.class)){
             HashSet<Set<?>> res = new HashSet<>();
-            res.add(null);
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
+                res.add(null);
+            }
             res.add(new HashSet<>());
             return res;
         } else if(type.equals(Map.class)){
             HashSet<Map<?,?>> res = new HashSet<>();
-            res.add(null);
+            if(allowNullMap.getOrDefault(clazz,allowNull)){
+                res.add(null);
+            }
             res.add(new HashMap<>());
             return res;
         }
 
         try {
             Set<?> cornerCasesForComplexType = createCornerCasesForClass(type, clazz);
-            cornerCasesForComplexType.add(null);
+            if(allowNullMap.getOrDefault(clazz, allowNull)){
+                cornerCasesForComplexType.add(null);
+            }
             return cornerCasesForComplexType;
         } catch (Exception e) {
             e.printStackTrace();
@@ -184,7 +210,7 @@ public class InstanceGenerator {
             return primitiveInClassInstMap.get(clazz).getShortVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, new DefaultPrimitiveInstantiator()).getShortVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getShortVals();
     }
 
     private <T> Set<?> handlePrimitiveByte(Field field, Class<T> clazz) {
@@ -197,7 +223,7 @@ public class InstanceGenerator {
             return primitiveInClassInstMap.get(clazz).getByteVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, new DefaultPrimitiveInstantiator()).getByteVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getByteVals();
     }
 
     private <T> Set<?> handlePrimitiveBool(Field field, Class<T> clazz) {
@@ -210,7 +236,7 @@ public class InstanceGenerator {
             return primitiveInClassInstMap.get(clazz).getBoolVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, new DefaultPrimitiveInstantiator()).getBoolVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getBoolVals();
     }
 
     private <T> Set<?> handlePrimitiveFloat(Field field, Class<T> clazz) {
@@ -223,7 +249,7 @@ public class InstanceGenerator {
             return primitiveInClassInstMap.get(clazz).getFloatVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, new DefaultPrimitiveInstantiator()).getFloatVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getFloatVals();
     }
 
     private <T> Set<?> handlePrimitiveDouble(Field field, Class<T> clazz) {
@@ -236,7 +262,7 @@ public class InstanceGenerator {
             return primitiveInClassInstMap.get(clazz).getDoubleVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, new DefaultPrimitiveInstantiator()).getDoubleVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getDoubleVals();
     }
 
     private <T> Set<?> handlePrimitiveLong(Field field, Class<T> clazz) {
@@ -249,7 +275,7 @@ public class InstanceGenerator {
             return primitiveInClassInstMap.get(clazz).getLongVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, new DefaultPrimitiveInstantiator()).getLongVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getLongVals();
     }
 
     private <T> Set<?> handlePrimitiveInteger(Field field, Class<T> clazz) {
@@ -262,38 +288,22 @@ public class InstanceGenerator {
             return primitiveInClassInstMap.get(clazz).getIntVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, new DefaultPrimitiveInstantiator()).getIntVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator)
+                .getIntVals();
     }
 
-    public <T> void addClassInstStrategy(InstantiationStrategy<T> strategy, Class<T> clazz){
+    public <T> InstanceCreatorCornerCase withClassInstStrategy(InstantiationStrategy<T> strategy, Class<T> clazz){
         this.classInstMap.put(clazz,strategy);
+        return this;
     }
 
-    public <T> void addPrimStratInClass(Class<T> clazz, PrimitiveInstantiator primStrat){
+    public <T> InstanceCreatorCornerCase withPrimStratInClass(Class<T> clazz, PrimitiveInstantiator primStrat){
         this.primitiveInClassInstMap.put(clazz,primStrat);
+        return this;
     }
 
-    public Map<Class, InstantiationStrategy> getClassInstMap() {
-        return classInstMap;
-    }
-
-    public void setClassInstMap(Map<Class, InstantiationStrategy> classInstMap) {
-        this.classInstMap = classInstMap;
-    }
-
-    public Map<Pair<Class, Class>, InstantiationStrategy> getClassInClassInstMap() {
-        return classInClassInstMap;
-    }
-
-    public void setClassInClassInstMap(Map<Pair<Class, Class>, InstantiationStrategy> classInClassInstMap) {
-        this.classInClassInstMap = classInClassInstMap;
-    }
-
-    public Map<Pair<Class, String>, InstantiationStrategy> getFieldInClassInstMap() {
-        return fieldInClassInstMap;
-    }
-
-    public void setFieldInClassInstMap(Map<Pair<Class, String>, InstantiationStrategy> fieldInClassInstMap) {
-        this.fieldInClassInstMap = fieldInClassInstMap;
+    public InstanceCreatorCornerCase withAllowNull(boolean allowNull){
+        setAllowNull(allowNull);
+        return this;
     }
 }

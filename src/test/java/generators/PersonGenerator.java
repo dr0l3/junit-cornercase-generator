@@ -2,21 +2,24 @@ package generators;
 
 import example.Person;
 import generator.CornerCaseGenerator;
-import generator.InstanceGenerator;
-import instantiator.DefaultPrimitiveInstantiator;
+import generator.InstanceCreatorCornerCase;
+import instantiator.CornerCasePrimitiveInstantiator;
+import instantiator.InstantiationStrategy;
+import instantiator.Instantiators;
+import instantiator.PrimitiveInstantiator;
 
 import java.awt.*;
 import java.util.Arrays;
-import java.util.HashSet;
 
 public class PersonGenerator extends CornerCaseGenerator<Person> {
     public PersonGenerator(){
         super(Person.class);
-        InstanceGenerator gen = new InstanceGenerator();
-        gen.addClassInstStrategy(new ColorInstantiator(), Color.class);
-        DefaultPrimitiveInstantiator p = new DefaultPrimitiveInstantiator();
-        p.setIntVals(new HashSet<>(Arrays.asList(0,1,100)));
-        gen.addPrimStratInClass(Person.class, p);
-        setInstanceGenerator(gen);
+        InstantiationStrategy<Color> colorsStrat = Instantiators.createInstantiator(Arrays.asList(Color.BLACK, Color.WHITE, Color.RED));
+        PrimitiveInstantiator nonNegInts = CornerCasePrimitiveInstantiator.withInts(Arrays.asList(0,1,100));
+        InstanceCreatorCornerCase gen = InstanceCreatorCornerCase.defaultCornerCase()
+                .withClassInstStrategy(colorsStrat,Color.class)
+                .withPrimStratInClass(Person.class,nonNegInts);
+
+        setCornerCaseCreator(gen);
     }
 }
