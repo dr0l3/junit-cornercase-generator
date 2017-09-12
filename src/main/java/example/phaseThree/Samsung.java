@@ -7,4 +7,11 @@ public class Samsung extends Smartphone {
     public String displayContents() {
         return this.toString();
     }
+
+    @Override
+    public String toString() {
+        return "Samsung{" +
+                "hasBeenUpdated=" + hasBeenUpdated +
+                '}';
+    }
 }

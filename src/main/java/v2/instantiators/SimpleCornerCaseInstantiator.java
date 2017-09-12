@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
+import org.reflections.Reflections;
 import v2.ClassCreatorMap;
 import v2.FieldCreatorMap;
 import v2.Utils;
@@ -31,10 +32,17 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase {
     @Override
     public <T> Set<T> createCornerCasesForClass(Class<T> clazz) {
         if(visiting.contains(clazz)){
-            return new HashSet<>();
+            return new HashSet<>(); // TODO: 12/09/2017 What to do here?
         }
         visiting.add(clazz);
         System.out.println("Creating corner clases for class: " + clazz.toString());
+
+        if(clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())){
+            Reflections reflections = new Reflections();
+            Set<Class<? extends T>> subtypes = reflections.getSubTypesOf(clazz);
+            visiting.remove(clazz);
+            return subtypes.stream().flatMap(subtype -> createCornerCasesForClass(subtype).stream()).collect(Collectors.toSet());
+        }
         try {
             boolean zeroArgConstructors = Stream.of(clazz.getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
             if(!zeroArgConstructors){
@@ -73,10 +81,12 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase {
                 }
                 res.add(inst);
             }
+            visiting.remove(clazz);
             return res;
         } catch (Exception e){
             e.printStackTrace();
-            return Collections.emptySet();
+            visiting.remove(clazz);
+            return Collections.emptySet(); // TODO: 12/09/2017 What to do here?
         }
     }
 

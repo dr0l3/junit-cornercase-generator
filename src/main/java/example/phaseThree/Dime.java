@@ -7,4 +7,11 @@ public class Dime implements PantsContent {
     public String displayContents() {
         return this.toString();
     }
+
+    @Override
+    public String toString() {
+        return "Dime{" +
+                "value=" + value +
+                '}';
+    }
 }

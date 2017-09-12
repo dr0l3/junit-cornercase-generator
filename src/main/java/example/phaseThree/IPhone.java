@@ -7,4 +7,11 @@ public class IPhone extends Smartphone{
     public String displayContents() {
         return this.toString();
     }
+
+    @Override
+    public String toString() {
+        return "IPhone{" +
+                "overPriced=" + overPriced +
+                '}';
+    }
 }

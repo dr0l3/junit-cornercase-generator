@@ -6,6 +6,7 @@ import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
+import org.reflections.Reflections;
 import v2.ClassCreatorMap;
 import v2.ClassCreatorMapSI;
 import v2.FieldCreatorMapSI;
@@ -25,6 +26,7 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal {
     private FieldCreatorMapSI fieldInClassInstMap = new FieldCreatorMapSI();
     private Map<Class, PrimitiveCreatorSI> primitiveInClassInstMap = Maps.newConcurrentMap();
     private PrimitiveCreatorSI defaultPrimitiveCreator = new SimpleNormalPrimCreator(); // FIXME: 12/09/2017 INitialization
+    private Map<Class<?>, Set<Class<?>>> subtypesMaps = Maps.newConcurrentMap();
 
     private <T,U> U handlePrimitive(Field field, Class<T> clazz, Class<U> fieldType, SourceOfRandomness randomness) {
         String fieldName = field.getName();
@@ -42,10 +44,20 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal {
 
     @Override
     public <T> T createInstance(Class<T> clazz, SourceOfRandomness randomness) {
+        System.out.println("Creating instances for class: " + clazz);
         if(visiting.contains(clazz)){
             return null; // TODO: 12/09/2017 What to do here?
         }
         visiting.add(clazz);
+        if(clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())){
+            Reflections reflections = new Reflections();
+            Set<Class<? extends T>> subtypes = reflections.getSubTypesOf(clazz); // TODO: 12/09/2017 Cache this call 
+            visiting.remove(clazz);
+            List<? extends T> possibles = subtypes.stream().map(subtype -> createInstance(subtype,randomness)).collect(Collectors.toList());
+            int index = randomness.nextInt(0,possibles.size()-1);
+            return possibles.get(index);
+        }
+
         try {
             boolean zeroArgConstructors = Stream.of(clazz.getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
             if(!zeroArgConstructors){
@@ -75,9 +87,11 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal {
                 field.set(inst,value);
                 field.setAccessible(false);
             }
+            visiting.remove(clazz);
             return inst;
         } catch (Exception e){
             e.printStackTrace();
+            visiting.remove(clazz);
             return null; // TODO: 12/09/2017 What to do here??
         }
     }

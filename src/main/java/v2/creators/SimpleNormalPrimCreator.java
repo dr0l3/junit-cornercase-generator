@@ -2,13 +2,6 @@ package v2.creators;
 
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
-import java.util.Random;
-import java.util.Set;
-
-import static instantiator.Constants.doubleVals;
-import static instantiator.Constants.floatVals;
-import static instantiator.Constants.longVals;
-
 public class SimpleNormalPrimCreator implements PrimitiveCreatorSI {
     private Byte byte_min = Byte.MIN_VALUE;
     private Byte byte_max = Byte.MAX_VALUE;
