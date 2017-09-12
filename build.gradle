@@ -19,7 +19,7 @@ dependencies {
     compile 'com.pholser:junit-quickcheck-core:0.8-alpha-7'
     compile group: 'com.pholser', name: 'junit-quickcheck-generators', version: '0.8-alpha-7'
     compile group: 'com.google.guava', name: 'guava', version: '23.0'
-
+    compile 'org.reflections:reflections:0.9.11'
 }
 
 test {
