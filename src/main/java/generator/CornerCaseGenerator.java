@@ -3,13 +3,13 @@ package generator;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import instantiator.CornerCasePrimitiveInstantiator;
+import instantiator.CornerCasePrimitiveCreator;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class CornerCaseGenerator<T> extends Generator<T> {
-    private InstanceCreatorCornerCase cornerCaseCreator;
+    private InstantiatorCornerCase cornerCaseCreator;
     private List<T> cornerCases;
     private int iterator;
     private Class<T> type;
@@ -19,14 +19,14 @@ public abstract class CornerCaseGenerator<T> extends Generator<T> {
         this.type = type;
     }
 
-    public CornerCaseGenerator<T> withCornerCaseCreator(InstanceCreatorCornerCase creator){
+    public CornerCaseGenerator<T> withCornerCaseCreator(InstantiatorCornerCase creator){
         this.cornerCaseCreator = creator;
         return this;
     }
 
     public void initializeOrNothing(){
         if(this.cornerCaseCreator == null){
-            this.cornerCaseCreator = new InstanceCreatorCornerCase(new CornerCasePrimitiveInstantiator());
+            this.cornerCaseCreator = new InstantiatorCornerCase(new CornerCasePrimitiveCreator());
         }
 
         if(this.cornerCases == null){
@@ -48,11 +48,11 @@ public abstract class CornerCaseGenerator<T> extends Generator<T> {
         return this.cornerCases.size();
     }
 
-    public InstanceCreatorCornerCase getCornerCaseCreator() {
+    public InstantiatorCornerCase getCornerCaseCreator() {
         return cornerCaseCreator;
     }
 
-    public void setCornerCaseCreator(InstanceCreatorCornerCase cornerCaseCreator) {
+    public void setCornerCaseCreator(InstantiatorCornerCase cornerCaseCreator) {
         this.cornerCaseCreator = cornerCaseCreator;
     }
 }

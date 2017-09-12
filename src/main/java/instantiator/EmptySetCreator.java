@@ -1,14 +1,12 @@
 package instantiator;
 
-import instantiator.InstantiationStrategy;
-
 import java.util.HashSet;
 import java.util.Set;
 
-public class EmptySetStrategy<T> implements InstantiationStrategy<T> {
+public class EmptySetCreator<T> implements CreationStrategy<T> {
     private Class<T> clazz;
 
-    public EmptySetStrategy(Class<T> clazz) {
+    public EmptySetCreator(Class<T> clazz) {
         this.clazz = clazz;
     }
 

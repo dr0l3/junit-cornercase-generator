@@ -1,7 +1,7 @@
 package generator;
 
-import instantiator.InstantiationStrategy;
-import instantiator.PrimitiveInstantiator;
+import instantiator.CreationStrategy;
+import instantiator.PrimitiveCreator;
 import org.javatuples.Pair;
 
 import java.util.HashMap;
@@ -9,15 +9,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class Creator {
-    protected Map<Class, InstantiationStrategy> classInstMap;
-    protected Map<Pair<Class, Class>,InstantiationStrategy> classInClassInstMap;
-    protected Map<Pair<Class, String>,InstantiationStrategy> fieldInClassInstMap;
-    protected Map<Class, PrimitiveInstantiator> primitiveInClassInstMap;
+public abstract class Instantiator {
+    protected Map<Class, CreationStrategy> classInstMap;
+    protected Map<Pair<Class, Class>, CreationStrategy> classInClassInstMap;
+    protected Map<Pair<Class, String>, CreationStrategy> fieldInClassInstMap;
+    protected Map<Class, PrimitiveCreator> primitiveInClassInstMap;
     protected Map<Class, Boolean> allowNullMap;
     protected Set<Class> visiting;
     protected boolean allowNull;
-    protected PrimitiveInstantiator defaultPrimitiveInstantiator;
+    protected PrimitiveCreator defaultPrimitiveCreator;
 
     protected void setEmptyDefaults(){
         classInstMap = new HashMap<>();
@@ -28,35 +28,35 @@ public abstract class Creator {
         visiting = new HashSet<>();
     }
 
-    public Map<Class, InstantiationStrategy> getClassInstMap() {
+    public Map<Class, CreationStrategy> getClassInstMap() {
         return classInstMap;
     }
 
-    public void setClassInstMap(Map<Class, InstantiationStrategy> classInstMap) {
+    public void setClassInstMap(Map<Class, CreationStrategy> classInstMap) {
         this.classInstMap = classInstMap;
     }
 
-    public Map<Pair<Class, Class>, InstantiationStrategy> getClassInClassInstMap() {
+    public Map<Pair<Class, Class>, CreationStrategy> getClassInClassInstMap() {
         return classInClassInstMap;
     }
 
-    public void setClassInClassInstMap(Map<Pair<Class, Class>, InstantiationStrategy> classInClassInstMap) {
+    public void setClassInClassInstMap(Map<Pair<Class, Class>, CreationStrategy> classInClassInstMap) {
         this.classInClassInstMap = classInClassInstMap;
     }
 
-    public Map<Pair<Class, String>, InstantiationStrategy> getFieldInClassInstMap() {
+    public Map<Pair<Class, String>, CreationStrategy> getFieldInClassInstMap() {
         return fieldInClassInstMap;
     }
 
-    public void setFieldInClassInstMap(Map<Pair<Class, String>, InstantiationStrategy> fieldInClassInstMap) {
+    public void setFieldInClassInstMap(Map<Pair<Class, String>, CreationStrategy> fieldInClassInstMap) {
         this.fieldInClassInstMap = fieldInClassInstMap;
     }
 
-    public Map<Class, PrimitiveInstantiator> getPrimitiveInClassInstMap() {
+    public Map<Class, PrimitiveCreator> getPrimitiveInClassInstMap() {
         return primitiveInClassInstMap;
     }
 
-    public void setPrimitiveInClassInstMap(Map<Class, PrimitiveInstantiator> primitiveInClassInstMap) {
+    public void setPrimitiveInClassInstMap(Map<Class, PrimitiveCreator> primitiveInClassInstMap) {
         this.primitiveInClassInstMap = primitiveInClassInstMap;
     }
 
@@ -84,11 +84,11 @@ public abstract class Creator {
         this.allowNull = allowNull;
     }
 
-    public PrimitiveInstantiator getDefaultPrimitiveInstantiator() {
-        return defaultPrimitiveInstantiator;
+    public PrimitiveCreator getDefaultPrimitiveCreator() {
+        return defaultPrimitiveCreator;
     }
 
-    public void setDefaultPrimitiveInstantiator(PrimitiveInstantiator defaultPrimitiveInstantiator) {
-        this.defaultPrimitiveInstantiator = defaultPrimitiveInstantiator;
+    public void setDefaultPrimitiveCreator(PrimitiveCreator defaultPrimitiveCreator) {
+        this.defaultPrimitiveCreator = defaultPrimitiveCreator;
     }
 }

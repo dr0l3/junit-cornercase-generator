@@ -1,4 +1,4 @@
-package v2;
+package v2.creators;
 
 import java.util.Set;
 
@@ -10,4 +10,5 @@ public interface PrimitiveCreator {
     Set<Long> getLongs();
     Set<Float> getFloats();
     Set<Double> getDoubles();
+    <T> Set<T> getValuesForType(Class<T> clazz);
 }

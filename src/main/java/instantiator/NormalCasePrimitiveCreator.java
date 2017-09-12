@@ -3,8 +3,9 @@ package instantiator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 import java.util.*;
+import java.util.function.Predicate;
 
-public class NormalCasePrimitiveInstantiator implements PrimitiveInstantiator {
+public class NormalCasePrimitiveCreator implements PrimitiveCreator {
     private SourceOfRandomness randomness;
     private Byte byte_min = Byte.MIN_VALUE;
     private Byte byte_max = Byte.MAX_VALUE;
@@ -19,15 +20,15 @@ public class NormalCasePrimitiveInstantiator implements PrimitiveInstantiator {
     private Double double_min = Double.MIN_VALUE;
     private Double double_max = Double.MAX_VALUE;
 
-    public NormalCasePrimitiveInstantiator(SourceOfRandomness randomness) {
+    public NormalCasePrimitiveCreator(SourceOfRandomness randomness) {
         this.randomness = randomness;
     }
 
-    public NormalCasePrimitiveInstantiator() {
+    public NormalCasePrimitiveCreator() {
     }
 
-    public static NormalCasePrimitiveInstantiator nonNeg(){
-        NormalCasePrimitiveInstantiator inst = new NormalCasePrimitiveInstantiator();
+    public static NormalCasePrimitiveCreator nonNeg(){
+        NormalCasePrimitiveCreator inst = new NormalCasePrimitiveCreator();
         inst.randomness = new SourceOfRandomness(new Random());
         inst.byte_min = 0;
         inst.double_min = 0d;

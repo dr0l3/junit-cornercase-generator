@@ -1,11 +1,10 @@
 package v2.generators.phaseone;
 
 import example.phaseOne.SimplePojoString;
-import example.phaseOne.SimplePrimitivePojo;
-import generator.NormalGenerator;
+import v2.generators.NormalCaseGenerator;
 
-public class SimplePojoStringGeneratorNormal extends NormalGenerator<SimplePojoString> {
-    protected SimplePojoStringGeneratorNormal() {
+public class SimplePojoStringGeneratorNormal extends NormalCaseGenerator<SimplePojoString> {
+    public SimplePojoStringGeneratorNormal() {
         super(SimplePojoString.class);
     }
 }

@@ -3,15 +3,15 @@ package generator;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import instantiator.InstantiationStrategy;
-import instantiator.PrimitiveInstantiator;
+import instantiator.CreationStrategy;
+import instantiator.PrimitiveCreator;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class CombinedGenerator<T> extends Generator<T> {
-    private InstanceCreatorCornerCase cornerCaseCreator;
-    private InstanceCreatorNormal normalCaseCreator;
+    private InstantiatorCornerCase cornerCaseCreator;
+    private InstantiatorNormal normalCaseCreator;
     private List<T> cornerCases;
     private int iterator;
     private Class<T> type;
@@ -19,39 +19,39 @@ public abstract class CombinedGenerator<T> extends Generator<T> {
     protected CombinedGenerator(Class<T> type) {
         super(type);
         this.type = type;
-        this.cornerCaseCreator = InstanceCreatorCornerCase.defaultCornerCase();
-        this.normalCaseCreator = InstanceCreatorNormal.defaultNormalCase();
+        this.cornerCaseCreator = InstantiatorCornerCase.defaultCornerCase();
+        this.normalCaseCreator = InstantiatorNormal.defaultNormalCase();
     }
 
-    public CombinedGenerator<T> withCornerCaseCreator(InstanceCreatorCornerCase creator){
+    public CombinedGenerator<T> withCornerCaseCreator(InstantiatorCornerCase creator){
         this.cornerCaseCreator = creator;
         return this;
     }
 
-    public CombinedGenerator<T> withNormalCaseCreator(InstanceCreatorNormal creator){
+    public CombinedGenerator<T> withNormalCaseCreator(InstantiatorNormal creator){
         this.normalCaseCreator = creator;
         return this;
     }
 
-    public <U> CombinedGenerator<T> withClassInstStat(InstantiationStrategy<U> strat, Class<U> clazz) {
+    public <U> CombinedGenerator<T> withClassInstStat(CreationStrategy<U> strat, Class<U> clazz) {
         this.cornerCaseCreator = cornerCaseCreator.withClassInstStrategy(strat,clazz);
-        this.normalCaseCreator = normalCaseCreator.withClassInstStrategy(strat,clazz);
+        this.normalCaseCreator = normalCaseCreator.withClassCreationStrategy(strat,clazz);
         return this;
     }
 
-    public CombinedGenerator<T> withPrimStar(PrimitiveInstantiator primStar){
+    public CombinedGenerator<T> withPrimStar(PrimitiveCreator primStar){
         this.cornerCaseCreator = cornerCaseCreator.withDefaultPrimStrat(primStar);
-        this.normalCaseCreator = normalCaseCreator.withDefaultPrimStrat(primStar);
+        this.normalCaseCreator = normalCaseCreator.withPrimitiveCreationStrategy(primStar);
         return this;
     }
 
     @Override
     public T generate(SourceOfRandomness random, GenerationStatus status) {
         if(this.cornerCaseCreator == null){
-            this.cornerCaseCreator = InstanceCreatorCornerCase.defaultCornerCase();
+            this.cornerCaseCreator = InstantiatorCornerCase.defaultCornerCase();
         }
         if(this.normalCaseCreator == null){
-            this.normalCaseCreator = InstanceCreatorNormal.defaultNormalCase(random);
+            this.normalCaseCreator = InstantiatorNormal.defaultNormalCase(random);
         }
 
         if(this.cornerCases == null){
@@ -68,15 +68,15 @@ public abstract class CombinedGenerator<T> extends Generator<T> {
         return normalCaseCreator.createSingleInstanceOfClass(type, random);
     }
 
-    public InstanceCreatorCornerCase getCornerCaseCreator() {
+    public InstantiatorCornerCase getCornerCaseCreator() {
         return cornerCaseCreator;
     }
 
-    public void setCornerCaseCreator(InstanceCreatorCornerCase cornerCaseCreator) {
+    public void setCornerCaseCreator(InstantiatorCornerCase cornerCaseCreator) {
         this.cornerCaseCreator = cornerCaseCreator;
     }
 
-    public void setNormalCaseCreator(InstanceCreatorNormal normalCaseCreator) {
+    public void setNormalCaseCreator(InstantiatorNormal normalCaseCreator) {
         this.normalCaseCreator = normalCaseCreator;
     }
 }

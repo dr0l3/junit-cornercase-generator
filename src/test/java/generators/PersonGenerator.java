@@ -2,9 +2,8 @@ package generators;
 
 import example.Person;
 import generator.CombinedGenerator;
-import generator.CornerCaseGenerator;
-import generator.InstanceCreatorCornerCase;
-import generator.InstanceCreatorNormal;
+import generator.InstantiatorCornerCase;
+import generator.InstantiatorNormal;
 import instantiator.*;
 
 import java.awt.*;
@@ -13,19 +12,17 @@ import java.util.Arrays;
 public class PersonGenerator extends CombinedGenerator<Person> {
     public PersonGenerator(){
         super(Person.class);
-        InstantiationStrategy<Color> colorsStrat = Instantiators.createInstantiator(Arrays.asList(Color.BLACK, Color.WHITE, Color.RED));
-        PrimitiveInstantiator nonNegInts = CornerCasePrimitiveInstantiator.withInts(Arrays.asList(0,1,100));
-        InstanceCreatorCornerCase cornerGen = InstanceCreatorCornerCase.defaultCornerCase()
-                .withClassInstStrategy(colorsStrat,Color.class)
+        CreationStrategy<Color> colorCreator = Creators.creatorFromValues(Arrays.asList(Color.BLACK, Color.WHITE, Color.RED));
+        PrimitiveCreator nonNegInts = CornerCasePrimitiveCreator.withInts(Arrays.asList(0,1,100));
+        InstantiatorCornerCase cornerGen = InstantiatorCornerCase.defaultCornerCase()
+                .withClassInstStrategy(colorCreator,Color.class)
                 .withPrimStratInClass(Person.class,nonNegInts);
 
-        InstanceCreatorNormal normalGen = InstanceCreatorNormal.defaultNormalCase()
-                .withDefaultPrimStrat(NormalCasePrimitiveInstantiator.nonNeg());
+        InstantiatorNormal normalGen = InstantiatorNormal.defaultNormalCase()
+                .withPrimitiveCreationStrategy(nonNegInts);
 
         setCornerCaseCreator(cornerGen);
         setNormalCaseCreator(normalGen);
-        withClassInstStat(colorsStrat,Color.class);
-
-
+        withClassInstStat(colorCreator,Color.class);
     }
 }

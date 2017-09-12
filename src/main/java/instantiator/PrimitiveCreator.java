@@ -1,8 +1,10 @@
 package instantiator;
 
 import java.util.Set;
+import java.util.function.Predicate;
 
-public interface PrimitiveInstantiator {
+public interface PrimitiveCreator {
+//    PrimitiveCreator withConstraint(Predicate<? super Number> predicate);
     Set<Boolean> getBoolVals();
     Set<Byte> getByteVals();
     Set<Short> getShortVals();

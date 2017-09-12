@@ -1,13 +1,12 @@
 package generator;
 
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import instantiator.EmptySetStrategy;
-import instantiator.InstantiationStrategy;
-import instantiator.NormalCasePrimitiveInstantiator;
-import instantiator.PrimitiveInstantiator;
+import instantiator.EmptySetCreator;
+import instantiator.CreationStrategy;
+import instantiator.NormalCasePrimitiveCreator;
+import instantiator.PrimitiveCreator;
 import org.javatuples.Pair;
 
-import java.awt.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -15,26 +14,26 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class InstanceCreatorNormal extends Creator {
+public class InstantiatorNormal extends Instantiator {
     private Random random;
     private SourceOfRandomness sourceOfRandomness;
 
 
-    public static InstanceCreatorNormal defaultNormalCase(SourceOfRandomness randomness){
-        InstanceCreatorNormal creator = new InstanceCreatorNormal();
+    public static InstantiatorNormal defaultNormalCase(SourceOfRandomness randomness){
+        InstantiatorNormal creator = new InstantiatorNormal();
         creator.setSourceOfRandomness(randomness);
         creator.setEmptyDefaults();
-        creator.setDefaultPrimitiveInstantiator(new NormalCasePrimitiveInstantiator(randomness));
+        creator.setDefaultPrimitiveCreator(new NormalCasePrimitiveCreator(randomness));
         creator.setAllowNull(false);
         return creator;
     }
 
-    public static InstanceCreatorNormal defaultNormalCase(){
-        InstanceCreatorNormal creator = new InstanceCreatorNormal();
+    public static InstantiatorNormal defaultNormalCase(){
+        InstantiatorNormal creator = new InstantiatorNormal();
         SourceOfRandomness r = new SourceOfRandomness(new Random());
         creator.setSourceOfRandomness(r);
         creator.setEmptyDefaults();
-        creator.setDefaultPrimitiveInstantiator(new NormalCasePrimitiveInstantiator(r));
+        creator.setDefaultPrimitiveCreator(new NormalCasePrimitiveCreator(r));
         creator.setAllowNull(false);
         return creator;
     }
@@ -87,7 +86,7 @@ public class InstanceCreatorNormal extends Creator {
         try {
             boolean zeroArgConstructors = Stream.of(clazz.getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
             if(!zeroArgConstructors){
-                InstantiationStrategy<T> strategy = classInstMap.getOrDefault(clazz,new EmptySetStrategy<>(clazz));
+                CreationStrategy<T> strategy = classInstMap.getOrDefault(clazz,new EmptySetCreator<>(clazz));
 
                 List<T> possibles = new ArrayList<>(strategy.createFrom());
                 Collections.shuffle(possibles);
@@ -139,7 +138,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return defaultPrimitiveInstantiator.getByteVals().iterator().next();
+        return defaultPrimitiveCreator.getByteVals().iterator().next();
     }
 
     private <T> Object handlePrimitiveBool(Field field, Class<T> clazz) {
@@ -156,7 +155,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return defaultPrimitiveInstantiator.getBoolVals().iterator().next();
+        return defaultPrimitiveCreator.getBoolVals().iterator().next();
     }
 
     private <T> Object handlePrimitiveShort(Field field, Class<T> clazz) {
@@ -173,7 +172,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return defaultPrimitiveInstantiator.getShortVals().iterator().next();
+        return defaultPrimitiveCreator.getShortVals().iterator().next();
     }
 
     private <T> Object handlePrimitiveLong(Field field, Class<T> clazz) {
@@ -190,7 +189,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return defaultPrimitiveInstantiator.getLongVals().iterator().next();
+        return defaultPrimitiveCreator.getLongVals().iterator().next();
     }
 
     private <T> Object handlePrimitiveFloat(Field field, Class<T> clazz) {
@@ -207,7 +206,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return defaultPrimitiveInstantiator.getFloatVals().iterator().next();
+        return defaultPrimitiveCreator.getFloatVals().iterator().next();
     }
 
     private <T> Object handlePrimitiveDouble(Field field, Class<T> clazz) {
@@ -224,7 +223,7 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return defaultPrimitiveInstantiator.getDoubleVals().iterator().next();
+        return defaultPrimitiveCreator.getDoubleVals().iterator().next();
     }
     private <T> Object handlePrimitiveInt(Field field, Class<T> clazz) {
         String fieldName = field.getName();
@@ -240,21 +239,21 @@ public class InstanceCreatorNormal extends Creator {
             return options.get(0);
         }
 
-        return defaultPrimitiveInstantiator.getIntVals().iterator().next();
+        return defaultPrimitiveCreator.getIntVals().iterator().next();
     }
 
-    public <T> InstanceCreatorNormal withClassInstStrategy(InstantiationStrategy<T> strategy, Class<T> clazz){
+    public <T> InstantiatorNormal withClassCreationStrategy(CreationStrategy<T> strategy, Class<T> clazz){
         this.classInstMap.put(clazz,strategy);
         return this;
     }
 
-    public <T> InstanceCreatorNormal withPrimStratInClass(Class<T> clazz, PrimitiveInstantiator primStrat){
+    public <T> InstantiatorNormal withPrimCreationStrategy(Class<T> clazz, PrimitiveCreator primStrat){
         this.primitiveInClassInstMap.put(clazz,primStrat);
         return this;
     }
 
-    public InstanceCreatorNormal withDefaultPrimStrat(PrimitiveInstantiator primStrat){
-        setDefaultPrimitiveInstantiator(primStrat);
+    public InstantiatorNormal withPrimitiveCreationStrategy(PrimitiveCreator primStrat){
+        setDefaultPrimitiveCreator(primStrat);
         return this;
     }
 

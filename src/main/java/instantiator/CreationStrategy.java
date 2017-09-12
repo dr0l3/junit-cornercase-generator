@@ -2,6 +2,6 @@ package instantiator;
 
 import java.util.Set;
 
-public interface InstantiationStrategy<T> {
+public interface CreationStrategy<T> {
     Set<T> createFrom();
 }

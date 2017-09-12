@@ -1,11 +1,10 @@
 package v2.generators.phaseone;
 
 import example.phaseOne.SimplePrimitivePojo;
-import generator.CornerCaseGenerator;
-import generator.NormalGenerator;
+import v2.generators.CornerCaseGenerator;
 
 public class SimplePojoGeneratorCorner extends CornerCaseGenerator<SimplePrimitivePojo> {
-    protected SimplePojoGeneratorCorner() {
+    public SimplePojoGeneratorCorner() {
         super(SimplePrimitivePojo.class);
     }
 }

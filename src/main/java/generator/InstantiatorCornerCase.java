@@ -11,39 +11,31 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class InstanceCreatorCornerCase extends Creator{
+public class InstantiatorCornerCase extends Instantiator {
 
-    public static InstanceCreatorCornerCase defaultNormalCase(SourceOfRandomness randomness){
-        InstanceCreatorCornerCase creator = new InstanceCreatorCornerCase();
+    public static InstantiatorCornerCase defaultCornerCase(){
+        InstantiatorCornerCase creator = new InstantiatorCornerCase();
         creator.setEmptyDefaults();
-        creator.setDefaultPrimitiveInstantiator(new NormalCasePrimitiveInstantiator(randomness));
-        creator.setAllowNull(false);
-        return creator;
-    }
-
-    public static InstanceCreatorCornerCase defaultCornerCase(){
-        InstanceCreatorCornerCase creator = new InstanceCreatorCornerCase();
-        creator.setEmptyDefaults();
-        creator.setDefaultPrimitiveInstantiator(new CornerCasePrimitiveInstantiator());
+        creator.setDefaultPrimitiveCreator(new CornerCasePrimitiveCreator());
         creator.setAllowNull(true);
         return creator;
     }
 
-    public static InstanceCreatorCornerCase nonNegativeCornerCase(){
-        InstanceCreatorCornerCase creator = new InstanceCreatorCornerCase();
+    public static InstantiatorCornerCase nonNegativeCornerCase(){
+        InstantiatorCornerCase creator = new InstantiatorCornerCase();
         creator.setEmptyDefaults();
-        creator.setDefaultPrimitiveInstantiator(CornerCasePrimitiveInstantiator.nonNegative());
+        creator.setDefaultPrimitiveCreator(CornerCasePrimitiveCreator.nonNegative());
         creator.setAllowNull(true);
         return creator;
     }
 
-    private InstanceCreatorCornerCase() {
+    private InstantiatorCornerCase() {
         super();
     }
 
-    public InstanceCreatorCornerCase(PrimitiveInstantiator defaultPrimitiveInstantiator) {
+    public InstantiatorCornerCase(PrimitiveCreator defaultPrimitiveCreator) {
         setEmptyDefaults();
-        this.defaultPrimitiveInstantiator = defaultPrimitiveInstantiator;
+        this.defaultPrimitiveCreator = defaultPrimitiveCreator;
     }
 
     public <T,U> Set<T> createCornerCasesForClass(Class<T> clazz, Class<U> parent){
@@ -55,7 +47,7 @@ public class InstanceCreatorCornerCase extends Creator{
         try {
             boolean zeroArgConstructors = Stream.of(clazz.getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
             if(!zeroArgConstructors){
-                InstantiationStrategy<T> strategy = classInstMap.getOrDefault(clazz,new EmptySetStrategy(clazz));
+                CreationStrategy<T> strategy = classInstMap.getOrDefault(clazz,new EmptySetCreator(clazz));
 
                 return strategy.createFrom();
             }
@@ -210,7 +202,7 @@ public class InstanceCreatorCornerCase extends Creator{
             return primitiveInClassInstMap.get(clazz).getShortVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getShortVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveCreator).getShortVals();
     }
 
     private <T> Set<?> handlePrimitiveByte(Field field, Class<T> clazz) {
@@ -223,7 +215,7 @@ public class InstanceCreatorCornerCase extends Creator{
             return primitiveInClassInstMap.get(clazz).getByteVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getByteVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveCreator).getByteVals();
     }
 
     private <T> Set<?> handlePrimitiveBool(Field field, Class<T> clazz) {
@@ -236,7 +228,7 @@ public class InstanceCreatorCornerCase extends Creator{
             return primitiveInClassInstMap.get(clazz).getBoolVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getBoolVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveCreator).getBoolVals();
     }
 
     private <T> Set<?> handlePrimitiveFloat(Field field, Class<T> clazz) {
@@ -249,7 +241,7 @@ public class InstanceCreatorCornerCase extends Creator{
             return primitiveInClassInstMap.get(clazz).getFloatVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getFloatVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveCreator).getFloatVals();
     }
 
     private <T> Set<?> handlePrimitiveDouble(Field field, Class<T> clazz) {
@@ -262,7 +254,7 @@ public class InstanceCreatorCornerCase extends Creator{
             return primitiveInClassInstMap.get(clazz).getDoubleVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getDoubleVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveCreator).getDoubleVals();
     }
 
     private <T> Set<?> handlePrimitiveLong(Field field, Class<T> clazz) {
@@ -275,7 +267,7 @@ public class InstanceCreatorCornerCase extends Creator{
             return primitiveInClassInstMap.get(clazz).getLongVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator).getLongVals();
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveCreator).getLongVals();
     }
 
     private <T> Set<?> handlePrimitiveInteger(Field field, Class<T> clazz) {
@@ -288,26 +280,26 @@ public class InstanceCreatorCornerCase extends Creator{
             return primitiveInClassInstMap.get(clazz).getIntVals();
         }
 
-        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveInstantiator)
+        return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveCreator)
                 .getIntVals();
     }
 
-    public <T> InstanceCreatorCornerCase withClassInstStrategy(InstantiationStrategy<T> strategy, Class<T> clazz){
+    public <T> InstantiatorCornerCase withClassInstStrategy(CreationStrategy<T> strategy, Class<T> clazz){
         this.classInstMap.put(clazz,strategy);
         return this;
     }
 
-    public <T> InstanceCreatorCornerCase withPrimStratInClass(Class<T> clazz, PrimitiveInstantiator primStrat){
+    public <T> InstantiatorCornerCase withPrimStratInClass(Class<T> clazz, PrimitiveCreator primStrat){
         this.primitiveInClassInstMap.put(clazz,primStrat);
         return this;
     }
 
-    public InstanceCreatorCornerCase withDefaultPrimStrat(PrimitiveInstantiator primStrat){
-        setDefaultPrimitiveInstantiator(primStrat);
+    public InstantiatorCornerCase withDefaultPrimStrat(PrimitiveCreator primStrat){
+        setDefaultPrimitiveCreator(primStrat);
         return this;
     }
 
-    public InstanceCreatorCornerCase withAllowNull(boolean allowNull){
+    public InstantiatorCornerCase withAllowNull(boolean allowNull){
         setAllowNull(allowNull);
         return this;
     }

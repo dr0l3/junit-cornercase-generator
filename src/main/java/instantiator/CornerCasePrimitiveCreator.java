@@ -2,11 +2,12 @@ package instantiator;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class CornerCasePrimitiveInstantiator implements PrimitiveInstantiator {
+public class CornerCasePrimitiveCreator implements PrimitiveCreator {
     private Set<Boolean> boolVals = Constants.boolVals;
     private Set<Byte> byteVals = Constants.byteVals;
     private Set<Short> shortVals = Constants.shortVals;
@@ -14,6 +15,12 @@ public class CornerCasePrimitiveInstantiator implements PrimitiveInstantiator {
     private Set<Long> longVals = Constants.longVals;
     private Set<Float> floatVals = Constants.floatVals;
     private Set<Double> doubleVals = Constants.doubleVals;
+    private List<Predicate<? super Number>> constraints;
+
+//    @Override
+//    public PrimitiveCreator withConstraint(Predicate<? super Number> predicate) {
+//        return null;
+//    }
 
     public Set<Boolean> getBoolVals() {
         return boolVals;
@@ -71,8 +78,8 @@ public class CornerCasePrimitiveInstantiator implements PrimitiveInstantiator {
         this.doubleVals = doubleVals;
     }
 
-    public static PrimitiveInstantiator nonNegative(){
-        CornerCasePrimitiveInstantiator inst = new CornerCasePrimitiveInstantiator();
+    public static PrimitiveCreator nonNegative(){
+        CornerCasePrimitiveCreator inst = new CornerCasePrimitiveCreator();
         inst.setByteVals(Constants.byteVals.stream().filter(b -> b >= 0).collect(Collectors.toSet()));
         inst.setShortVals(Constants.shortVals.stream().filter(b -> b >= 0).collect(Collectors.toSet()));
         inst.setLongVals(Constants.longVals.stream().filter(b -> b >= 0).collect(Collectors.toSet()));
@@ -81,8 +88,8 @@ public class CornerCasePrimitiveInstantiator implements PrimitiveInstantiator {
         return inst;
     }
 
-    public static PrimitiveInstantiator fromPredicate(Predicate<? super Number> predicate){
-        CornerCasePrimitiveInstantiator inst = new CornerCasePrimitiveInstantiator();
+    public static PrimitiveCreator fromPredicate(Predicate<? super Number> predicate){
+        CornerCasePrimitiveCreator inst = new CornerCasePrimitiveCreator();
         inst.setByteVals(Constants.byteVals.stream().filter(predicate).collect(Collectors.toSet()));
         inst.setShortVals(Constants.shortVals.stream().filter(predicate).collect(Collectors.toSet()));
         inst.setLongVals(Constants.longVals.stream().filter(predicate).collect(Collectors.toSet()));
@@ -91,78 +98,78 @@ public class CornerCasePrimitiveInstantiator implements PrimitiveInstantiator {
         return inst;
     }
 
-    public static PrimitiveInstantiator withBools(Collection<Boolean> booleans){
-        CornerCasePrimitiveInstantiator inst = new CornerCasePrimitiveInstantiator();
+    public static PrimitiveCreator withBools(Collection<Boolean> booleans){
+        CornerCasePrimitiveCreator inst = new CornerCasePrimitiveCreator();
         inst.setBoolVals(new HashSet<>(booleans));
         return inst;
     }
 
-    public static PrimitiveInstantiator withBytes(Collection<Byte> bytes){
-        CornerCasePrimitiveInstantiator inst = new CornerCasePrimitiveInstantiator();
+    public static PrimitiveCreator withBytes(Collection<Byte> bytes){
+        CornerCasePrimitiveCreator inst = new CornerCasePrimitiveCreator();
         inst.setByteVals(new HashSet<>(bytes));
         return inst;
     }
 
-    public static PrimitiveInstantiator withShorts(Collection<Short> shorts){
-        CornerCasePrimitiveInstantiator inst = new CornerCasePrimitiveInstantiator();
+    public static PrimitiveCreator withShorts(Collection<Short> shorts){
+        CornerCasePrimitiveCreator inst = new CornerCasePrimitiveCreator();
         inst.setShortVals(new HashSet<>(shorts));
         return inst;
     }
 
-    public static PrimitiveInstantiator withInts(Collection<Integer> ints){
-        CornerCasePrimitiveInstantiator inst = new CornerCasePrimitiveInstantiator();
+    public static PrimitiveCreator withInts(Collection<Integer> ints){
+        CornerCasePrimitiveCreator inst = new CornerCasePrimitiveCreator();
         inst.setIntVals(new HashSet<>(ints));
         return inst;
     }
 
-    public static PrimitiveInstantiator withLongs(Collection<Long> longs){
-        CornerCasePrimitiveInstantiator inst = new CornerCasePrimitiveInstantiator();
+    public static PrimitiveCreator withLongs(Collection<Long> longs){
+        CornerCasePrimitiveCreator inst = new CornerCasePrimitiveCreator();
         inst.setLongVals(new HashSet<>(longs));
         return inst;
     }
 
-    public static PrimitiveInstantiator withFloats(Collection<Float> floats){
-        CornerCasePrimitiveInstantiator inst = new CornerCasePrimitiveInstantiator();
+    public static PrimitiveCreator withFloats(Collection<Float> floats){
+        CornerCasePrimitiveCreator inst = new CornerCasePrimitiveCreator();
         inst.setFloatVals(new HashSet<>(floats));
         return inst;
     }
 
-    public static PrimitiveInstantiator withDoubles(Collection<Double> doubles){
-        CornerCasePrimitiveInstantiator inst = new CornerCasePrimitiveInstantiator();
+    public static PrimitiveCreator withDoubles(Collection<Double> doubles){
+        CornerCasePrimitiveCreator inst = new CornerCasePrimitiveCreator();
         inst.setDoubleVals(new HashSet<>(doubles));
         return inst;
     }
 
-    public PrimitiveInstantiator andBools(Collection<Boolean> bools){
+    public PrimitiveCreator andBools(Collection<Boolean> bools){
         this.setBoolVals(new HashSet<>(bools));
         return this;
     }
-    public PrimitiveInstantiator andBytes(Collection<Byte> bytes){
+    public PrimitiveCreator andBytes(Collection<Byte> bytes){
         this.setByteVals(new HashSet<>(bytes));
         return this;
     }
 
-    public PrimitiveInstantiator andShorts(Collection<Short> shots){
+    public PrimitiveCreator andShorts(Collection<Short> shots){
         this.setShortVals(new HashSet<>(shots));
         return this;
     }
 
-    public PrimitiveInstantiator andInst(Collection<Integer> ints){
+    public PrimitiveCreator andInst(Collection<Integer> ints){
         this.setIntVals(new HashSet<>(ints));
         return this;
     }
 
-    public PrimitiveInstantiator andLongs(Collection<Long> longs){
+    public PrimitiveCreator andLongs(Collection<Long> longs){
         this.setLongVals(new HashSet<>(longs));
         return this;
     }
 
-    public PrimitiveInstantiator andFloats(Collection<Float> floats){
+    public PrimitiveCreator andFloats(Collection<Float> floats){
         this.setFloatVals(new HashSet<>(floats));
         return this;
     }
 
-    public PrimitiveInstantiator andDoubles(Collection<Double> doubles){
+    public PrimitiveCreator andDoubles(Collection<Double> doubles){
         this.setDoubleVals(new HashSet<>(doubles));
         return this;
     }
