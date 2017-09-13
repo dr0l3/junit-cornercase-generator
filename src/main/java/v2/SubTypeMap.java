@@ -1,25 +1,24 @@
 package v2;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import org.reflections.Reflections;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class SubTypeMap {
-    private Map<Class<?>, Set<Class<?>>> map = Maps.newConcurrentMap();
+    private static Map<Class<?>, Set<?>> map = Maps.newConcurrentMap();
+    public static Reflections reflections = new Reflections(); // TODO: 13/09/2017 Move and configuration
 
-    public <T> void put(Class<T> key, Set<Class<? extends T>> value){
+    public static <T> void put(Class<T> key, Set<Class<? extends T>> value){
         map.put(key,value);
     }
 
-    public <T> Set<Class<T>> get(Class<T> key){
-//        return map.get(key).stream().map(v -> Class<T>. v).collect(Collectors.toSet());
-        return null;
+    public static <T> Set<Class<? extends T>> get(Class<T> key){
+        return (Set<Class<? extends T>>) map.get(key);
     }
 
-    public <T> boolean containsKey(Class<T> key){
+    public static <T> boolean containsKey(Class<T> key){
         return map.containsKey(key);
     }
 }

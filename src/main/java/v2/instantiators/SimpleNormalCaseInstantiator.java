@@ -7,10 +7,7 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import org.reflections.Reflections;
-import v2.ClassCreatorMap;
-import v2.ClassCreatorMapSI;
-import v2.FieldCreatorMapSI;
-import v2.Utils;
+import v2.*;
 import v2.creators.*;
 
 import java.lang.reflect.Field;
@@ -26,7 +23,6 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal {
     private FieldCreatorMapSI fieldInClassInstMap = new FieldCreatorMapSI();
     private Map<Class, PrimitiveCreatorSI> primitiveInClassInstMap = Maps.newConcurrentMap();
     private PrimitiveCreatorSI defaultPrimitiveCreator = new SimpleNormalPrimCreator(); // FIXME: 12/09/2017 INitialization
-    private Map<Class<?>, Set<Class<?>>> subtypesMaps = Maps.newConcurrentMap();
 
     private <T,U> U handlePrimitive(Field field, Class<T> clazz, Class<U> fieldType, SourceOfRandomness randomness) {
         String fieldName = field.getName();
@@ -44,18 +40,24 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal {
 
     @Override
     public <T> T createInstance(Class<T> clazz, SourceOfRandomness randomness) {
-        System.out.println("Creating instances for class: " + clazz);
+//        System.out.println("Class: " + clazz + " time " +System.currentTimeMillis());
+        long start = System.currentTimeMillis();
         if(visiting.contains(clazz)){
             return null; // TODO: 12/09/2017 What to do here?
         }
         visiting.add(clazz);
         if(clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())){
-            Reflections reflections = new Reflections();
-            Set<Class<? extends T>> subtypes = reflections.getSubTypesOf(clazz); // TODO: 12/09/2017 Cache this call 
+            Set<Class<? extends T>> subtypes;
+            if(SubTypeMap.containsKey(clazz)){
+                subtypes = SubTypeMap.get(clazz);
+            } else {
+                subtypes = SubTypeMap.reflections.getSubTypesOf(clazz);
+                SubTypeMap.put(clazz,subtypes);
+            }
+            int subtypeINdex = randomness.nextInt(0, subtypes.size()-1);
+            Class<? extends T> next = new ArrayList<>(subtypes).get(subtypeINdex);
             visiting.remove(clazz);
-            List<? extends T> possibles = subtypes.stream().map(subtype -> createInstance(subtype,randomness)).collect(Collectors.toList());
-            int index = randomness.nextInt(0,possibles.size()-1);
-            return possibles.get(index);
+            return createInstance(next,randomness);
         }
 
         try {

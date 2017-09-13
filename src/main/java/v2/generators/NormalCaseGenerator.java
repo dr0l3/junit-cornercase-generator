@@ -4,11 +4,7 @@ import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import v2.instantiators.InstantiatorNormal;
-import v2.instantiators.SimpleCornerCaseInstantiator;
 import v2.instantiators.SimpleNormalCaseInstantiator;
-
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 
 public abstract class NormalCaseGenerator<T> extends Generator<T> {
     private Class<T> type;

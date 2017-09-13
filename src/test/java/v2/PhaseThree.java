@@ -22,8 +22,9 @@ public class PhaseThree {
         System.out.println(content.displayContents());
     }
 
-    @Property
+    @Property()
     public void pantsContentsNormalCasesNoConfig(@From(SimplePantsContentGeneratorNormal.class)PantsContent content){
         System.out.println(content);
+        System.out.println("-------------------------------------------------------------------");
     }
 }

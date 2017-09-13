@@ -7,6 +7,7 @@ import org.javatuples.Triplet;
 import org.reflections.Reflections;
 import v2.ClassCreatorMap;
 import v2.FieldCreatorMap;
+import v2.SubTypeMap;
 import v2.Utils;
 import v2.creators.ClassCreator;
 import v2.creators.EmptySetClassCreator;
@@ -38,8 +39,13 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase {
         System.out.println("Creating corner clases for class: " + clazz.toString());
 
         if(clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())){
-            Reflections reflections = new Reflections();
-            Set<Class<? extends T>> subtypes = reflections.getSubTypesOf(clazz);
+            Set<Class<? extends T>> subtypes;
+            if(SubTypeMap.containsKey(clazz)){
+                subtypes = SubTypeMap.get(clazz);
+            } else {
+                subtypes = SubTypeMap.reflections.getSubTypesOf(clazz);
+                SubTypeMap.put(clazz,subtypes);
+            }
             visiting.remove(clazz);
             return subtypes.stream().flatMap(subtype -> createCornerCasesForClass(subtype).stream()).collect(Collectors.toSet());
         }
