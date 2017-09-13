@@ -1,5 +1,6 @@
 package v2.instantiators;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.javatuples.Pair;
@@ -9,18 +10,16 @@ import v2.ClassCreatorMap;
 import v2.FieldCreatorMap;
 import v2.SubTypeMap;
 import v2.Utils;
-import v2.creators.ClassCreator;
-import v2.creators.EmptySetClassCreator;
-import v2.creators.PrimitiveCreator;
-import v2.creators.SimpleCCPrimCreator;
+import v2.creators.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase {
+public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,ListCreator,SetCreator,MapCreator {
     private Set<Class> visiting = Sets.newHashSet();
     private ClassCreatorMap classInstMap = new ClassCreatorMap();
     private boolean allowNull = true;
@@ -110,26 +109,18 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase {
             }
             return (Set<U>) res;
         } else if(fieldType.equals(List.class)){
-            HashSet<List<?>> res = new HashSet<>();
-            if(allowNullMap.getOrDefault(clazz,allowNull)){
-                res.add(null);
-            }
-            res.add(new ArrayList<>());
-            return (Set<U>) res;
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
+            return (Set<U>) createLists(genericParam);
         } else if(fieldType.equals(Set.class)){
-            HashSet<Set<?>> res = new HashSet<>();
-            if(allowNullMap.getOrDefault(clazz,allowNull)){
-                res.add(null);
-            }
-            res.add(new HashSet<>());
-            return (Set<U>) res;
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
+            return (Set<U>) createSets(genericParam);
         } else if(fieldType.equals(Map.class)){
-            HashSet<Map<?,?>> res = new HashSet<>();
-            if(allowNullMap.getOrDefault(clazz,allowNull)){
-                res.add(null);
-            }
-            res.add(new HashMap<>());
-            return (Set<U>) res;
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
+            Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[0];
+            return (Set<U>) createMaps(genericParamKey,genericParamValue);
         }
 
         try {
@@ -164,5 +155,87 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase {
             return withNullSet;
         } else
             return nonNullSet;
+    }
+
+    @Override
+    public <T> Set<List<T>> createLists(Class<T> clazz) {
+        //cases: empty list, list with 1 element, list with 2 elements, list with duplicates, list with null element
+        Set<List<T>> res = Sets.newHashSet();
+
+        if(allowNullMap.getOrDefault(clazz, allowNull)){
+//            List<T> withNull = Arrays.asList(null);
+//            res.add(withNull);
+            res.add(null);
+        }
+
+        Set<T> cornerCases = createCornerCasesForClass(clazz);
+        T anElement = cornerCases.iterator().next();
+        List<T> empty = Lists.newArrayList();
+        List<T> singleElement = Arrays.asList(anElement);
+        List<T> withDuplicate = Arrays.asList(anElement,anElement);
+        List<T> cornerCasesAsList = new ArrayList<>(cornerCases);
+        res.add(empty);
+        res.add(singleElement);
+        res.add(withDuplicate);
+        res.add(cornerCasesAsList);
+
+        return res;
+    }
+
+    @Override
+    public <T, U> Set<Map<T, U> > createMaps(Class<T> key, Class<U> value) {
+        Set<Map<T,U>> res = Sets.newHashSet();
+        Random random = new Random();
+
+        Set<T> keys = createCornerCasesForClass(key);
+        Set<U> values = createCornerCasesForClass(value);
+        int maxSize = Math.max(keys.size(), values.size());
+        List<T> keyList = Lists.newArrayList(keys);
+        List<U> valueList = Lists.newArrayList(values);
+        List<T> keyListRandom = Lists.newArrayList(keys);
+        List<U> valueListRandom = Lists.newArrayList(values);
+        //seriously... what the fuck is this? Why is there not a zip function?
+        for (int i = keys.size(); i < maxSize; i++) {
+            keyList.add(keyListRandom.get(random.nextInt(keyListRandom.size()-1)));
+        }
+
+        for (int i = values.size(); i < maxSize; i++) {
+            valueList.add(valueListRandom.get(random.nextInt(valueListRandom.size()-1)));
+        }
+        Map<T,U> empty = Maps.newHashMap();
+        res.add(empty);
+        Map<T,U> rest = Maps.newHashMap();
+        for (int i = 0; i < maxSize; i++) {
+            rest.put(keyList.get(i),valueList.get(i));
+        }
+        res.add(rest);
+        if(allowNull){ // TODO: 13/09/2017 Verify that this is okay
+            res.add(null);
+        }
+
+
+        //cases: empty map, from all sorts of keys to all sorts of values
+        return res;
+    }
+
+    @Override
+    public <T> Set<Set<T>> createSets(Class<T> clazz) {
+        Set<Set<T>> res = Sets.newHashSet();
+
+        if(allowNullMap.getOrDefault(clazz, allowNull)){
+            Set<T> withNull = new HashSet<>(Arrays.asList(null));
+            res.add(withNull);
+            res.add(null);
+        }
+
+        Set<T> cornerCases = createCornerCasesForClass(clazz);
+        T anElement = cornerCases.iterator().next();
+        Set<T> empty = Sets.newHashSet();
+        Set<T> singleElement = Sets.newHashSet(anElement);
+        res.add(empty);
+        res.add(singleElement);
+        res.add(cornerCases);
+
+        return res;
     }
 }
