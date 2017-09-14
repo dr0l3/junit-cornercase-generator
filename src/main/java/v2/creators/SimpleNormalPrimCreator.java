@@ -2,6 +2,8 @@ package v2.creators;
 
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 public class SimpleNormalPrimCreator implements PrimitiveCreatorSI {
     private Byte byte_min = Byte.MIN_VALUE;
     private Byte byte_max = Byte.MAX_VALUE;
@@ -65,17 +67,20 @@ public class SimpleNormalPrimCreator implements PrimitiveCreatorSI {
 
     @Override
     public Double nextDouble(SourceOfRandomness randomness) {
-        return randomness.nextDouble(double_min,double_max);
+        return randomness.nextDouble(double_min,double_max); // TODO: 14/09/2017 This gives very unexpected results for MAX/MIN values. java ftw...
     }
 
     @Override
     public <T> T getValueForType(Class<T> clazz, SourceOfRandomness randomness) {
         if(clazz.equals(Integer.TYPE) || clazz.equals(Integer.class)) {
-            return (T) nextInt(randomness);
+            Integer res = nextInt(randomness);
+            return (T) res;
         } else if(clazz.equals(Long.TYPE) || clazz.equals(Long.class)) {
             return (T) nextLong(randomness);
         } else if(clazz.equals(Double.TYPE) || clazz.equals(Double.class)) {
-            return (T) nextDouble(randomness);
+            Double res = nextDouble(randomness);
+            System.out.println(res);
+            return (T) res;
         } else if(clazz.equals(Float.TYPE) || clazz.equals(Float.class)) {
             return (T) nextFloat(randomness);
         } else if (clazz.equals(Boolean.TYPE) || clazz.equals(Boolean.class)){

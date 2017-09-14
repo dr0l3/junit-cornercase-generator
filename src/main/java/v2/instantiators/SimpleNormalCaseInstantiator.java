@@ -31,9 +31,6 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal, ListCre
         if (fieldInClassInstMap.containsKey(com)) {
             return fieldInClassInstMap.get(com).createInstance();
         }
-        if (primitiveInClassInstMap.containsKey(clazz)) {
-            return primitiveInClassInstMap.get(clazz).getValueForType(fieldType, randomness);
-        }
 
         return primitiveInClassInstMap.getOrDefault(clazz, defaultPrimitiveCreator).getValueForType(fieldType, randomness);
     }
@@ -161,5 +158,23 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal, ListCre
             res.add(createInstance(clazz,randomness));
         }
         return res;
+    }
+
+    @Override
+    public InstantiatorNormal withDefaultPrimitiveCreator(PrimitiveCreatorSI creator) {
+        this.defaultPrimitiveCreator = creator;
+        return this;
+    }
+
+    @Override
+    public <U> InstantiatorNormal withPrimitiveCreatorSIForClass(Class<U> clazz, PrimitiveCreatorSI creator) {
+        this.primitiveInClassInstMap.put(clazz,creator);
+        return this;
+    }
+
+    @Override
+    public <U, V> InstantiatorNormal withCreatorForField(Class<U> parentClass, String name, Class<V> fieldClass, ClassCreatorSI creator) {
+        this.fieldInClassInstMap.put(Triplet.with(parentClass,name, fieldClass), creator);
+        return this;
     }
 }

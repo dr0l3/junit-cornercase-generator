@@ -10,6 +10,7 @@ import v2.FieldCreatorMap;
 import v2.SubTypeMap;
 import v2.Utils;
 import v2.creators.*;
+import v2.generators.PrimitiveCreatorConfigurator;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -18,7 +19,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,ListCreator,SetCreator,MapCreator {
+public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,ListCreator,SetCreator,MapCreator{
     private Set<Class> visiting = Sets.newHashSet();
     private ClassCreatorMap classInstMap = new ClassCreatorMap();
     private boolean allowNull = true;
@@ -79,6 +80,7 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
                     Field field = entry.getKey();
                     field.setAccessible(true);
                     List<?> values = Arrays.asList(entry.getValue().toArray());
+                    Collections.shuffle(values);
                     Object value = values.get((i%values.size()));
                     field.set(inst,value);
                     field.setAccessible(false);
@@ -250,5 +252,29 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
         } else {
             return createCornerCasesForClass(clazz);
         }
+    }
+
+    @Override
+    public SimpleCornerCaseInstantiator withDefaultPrimitiveCreator(PrimitiveCreator creator) {
+        this.defaultPrimitiveCreator = creator;
+        return this;
+    }
+
+    @Override
+    public InstantiatorCornerCase withNullable(boolean nullable) {
+        this.allowNull = nullable;
+        return this;
+    }
+
+    @Override
+    public <U> InstantiatorCornerCase withPrimitiveCreatorForClass(Class<U> clazz, PrimitiveCreator creator) {
+        this.primitiveInClassInstMap.put(clazz,creator);
+        return this;
+    }
+
+    @Override
+    public <U, V> InstantiatorCornerCase withCreatorForField(Class<U> parentClass, String name, Class<V> fieldClass, ClassCreator creator) {
+        this.fieldInClassInstMap.put(Triplet.with(parentClass,name, fieldClass), creator);
+        return this;
     }
 }

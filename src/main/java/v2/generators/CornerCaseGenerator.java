@@ -3,13 +3,21 @@ package v2.generators;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import v2.creators.ClassCreator;
+import v2.creators.PrimitiveCreator;
 import v2.instantiators.InstantiatorCornerCase;
 import v2.instantiators.SimpleCornerCaseInstantiator;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class CornerCaseGenerator<T> extends Generator<T> implements ComplexityAware {
+public abstract class CornerCaseGenerator<T> extends Generator<T>implements
+        ComplexityAware,
+        PrimitiveCreatorConfigurator<CornerCaseGenerator<T>>,
+        NullableConfigurator<CornerCaseGenerator<T>>,
+        PrimitiveCreatorPerClassConfigurator<CornerCaseGenerator<T>>,
+        FieldCreatorConfigurator<CornerCaseGenerator<T>>
+{
     private List<T> cornerCases;
     private InstantiatorCornerCase instantiator;
     private int iterator;
@@ -53,5 +61,29 @@ public abstract class CornerCaseGenerator<T> extends Generator<T> implements Com
             this.cornerCases = new ArrayList<>(instantiator.createCornerCasesForClass(type));
             this.iterator = 0;
         }
+    }
+
+    @Override
+    public CornerCaseGenerator<T> withDefaultPrimitiveCreator(PrimitiveCreator creator) {
+        this.instantiator = instantiator.withDefaultPrimitiveCreator(creator);
+        return this;
+    }
+
+    @Override
+    public CornerCaseGenerator<T> withNullable(boolean nullable) {
+        this.instantiator = instantiator.withNullable(nullable);
+        return this;
+    }
+
+    @Override
+    public <U> CornerCaseGenerator<T> withPrimitiveCreatorForClass(Class<U> clazz, PrimitiveCreator creator) {
+        this.instantiator.withPrimitiveCreatorForClass(clazz,creator);
+        return this;
+    }
+
+    @Override
+    public <U, V> CornerCaseGenerator<T> withCreatorForField(Class<U> parentClass, String name, Class<V> fieldClass, ClassCreator creator) {
+        this.instantiator.withCreatorForField(parentClass,name,fieldClass,creator);
+        return this;
     }
 }
