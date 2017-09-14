@@ -6,10 +6,7 @@ import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import example.phaseThree.Pants;
 import example.phaseThree.PantsContent;
 import org.junit.runner.RunWith;
-import v2.generators.phasethree.SimplePantsContentGeneratorCombined;
-import v2.generators.phasethree.SimplePantsContentGeneratorCorner;
-import v2.generators.phasethree.SimplePantsContentGeneratorNormal;
-import v2.generators.phasethree.SimplePantsGeneratorCorner;
+import v2.generators.phasethree.*;
 
 @RunWith(JUnitQuickcheck.class)
 public class PhaseThree {
@@ -32,6 +29,16 @@ public class PhaseThree {
 
     @Property
     public void pantsCornerCaseWithNoConfig(@From(SimplePantsGeneratorCorner.class)Pants pants){
+        System.out.println(pants);
+    }
+
+    @Property
+    public void pantsNormalCaseWithNoConfig(@From(SimplePantsGeneratorNormal.class)Pants pants){
+        System.out.println(pants);
+    }
+
+    @Property
+    public void pantsCombinedCaseWithNoConfig(@From(SimplePantsGeneratorCombined.class)Pants pants){
         System.out.println(pants);
     }
 }

@@ -6,5 +6,5 @@ import java.util.List;
 import java.util.Set;
 
 public interface ListCreator {
-    <T> Set<List<T>> createLists(Class<T> clazz);
+    <T,U> Set<List<T>> createLists(Class<T> clazz, Class<U> parent);
 }

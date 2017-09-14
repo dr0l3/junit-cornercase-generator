@@ -5,7 +5,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
-import org.reflections.Reflections;
 import v2.ClassCreatorMap;
 import v2.FieldCreatorMap;
 import v2.SubTypeMap;
@@ -96,7 +95,6 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
     }
 
 
-
     public <T,U> Set<U> createCornerCasesForField(Field field, Class<T> clazz, Class<U> fieldType){
         if(fieldType.isEnum()) {
             return new HashSet<>(Arrays.asList(fieldType.getEnumConstants()));
@@ -111,16 +109,16 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
         } else if(fieldType.equals(List.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
-            return (Set<U>) createLists(genericParam);
+            return (Set<U>) createLists(genericParam, clazz);
         } else if(fieldType.equals(Set.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
-            return (Set<U>) createSets(genericParam);
+            return (Set<U>) createSets(genericParam, clazz);
         } else if(fieldType.equals(Map.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
-            Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[0];
-            return (Set<U>) createMaps(genericParamKey,genericParamValue);
+            Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[1];
+            return (Set<U>) createMaps(genericParamKey,genericParamValue, clazz);
         }
 
         try {
@@ -133,6 +131,10 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
             e.printStackTrace();
         }
         return Collections.emptySet();
+    }
+
+    private <T,U> Set<T> handlePrimitiveSimple(Class<T> clazz, Class<U> parent){
+        return primitiveInClassInstMap.getOrDefault(parent,defaultPrimitiveCreator).getValuesForType(clazz);
     }
 
     private <T,U> Set<U> handlePrimitive(Field field, Class<T> clazz, Class<U> fieldType) {
@@ -158,7 +160,7 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
     }
 
     @Override
-    public <T> Set<List<T>> createLists(Class<T> clazz) {
+    public <T,U> Set<List<T>> createLists(Class<T> clazz, Class<U> parent) {
         //cases: empty list, list with 1 element, list with 2 elements, list with duplicates, list with null element
         Set<List<T>> res = Sets.newHashSet();
 
@@ -168,7 +170,8 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
             res.add(null);
         }
 
-        Set<T> cornerCases = createCornerCasesForClass(clazz);
+
+        Set<T> cornerCases = createCornerCasesForGenericValue(clazz, parent);
         T anElement = cornerCases.iterator().next();
         List<T> empty = Lists.newArrayList();
         List<T> singleElement = Arrays.asList(anElement);
@@ -183,12 +186,13 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
     }
 
     @Override
-    public <T, U> Set<Map<T, U> > createMaps(Class<T> key, Class<U> value) {
+    public <T, U,V> Set<Map<T, U> > createMaps(Class<T> key, Class<U> value, Class<V> parent) {
         Set<Map<T,U>> res = Sets.newHashSet();
         Random random = new Random();
 
-        Set<T> keys = createCornerCasesForClass(key);
-        Set<U> values = createCornerCasesForClass(value);
+        Set<T> keys = createCornerCasesForGenericValue(key,parent);
+        Set<U> values = createCornerCasesForGenericValue(value,parent);
+
         int maxSize = Math.max(keys.size(), values.size());
         List<T> keyList = Lists.newArrayList(keys);
         List<U> valueList = Lists.newArrayList(values);
@@ -219,16 +223,16 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
     }
 
     @Override
-    public <T> Set<Set<T>> createSets(Class<T> clazz) {
+    public <T,U> Set<Set<T>> createSets(Class<T> clazz, Class<U> parent) {
         Set<Set<T>> res = Sets.newHashSet();
 
         if(allowNullMap.getOrDefault(clazz, allowNull)){
-            Set<T> withNull = new HashSet<>(Arrays.asList(null));
-            res.add(withNull);
+//            Set<T> withNull = new HashSet<>(null);
+//            res.add(withNull);
             res.add(null);
         }
 
-        Set<T> cornerCases = createCornerCasesForClass(clazz);
+        Set<T> cornerCases = createCornerCasesForGenericValue(clazz, parent);
         T anElement = cornerCases.iterator().next();
         Set<T> empty = Sets.newHashSet();
         Set<T> singleElement = Sets.newHashSet(anElement);
@@ -237,5 +241,14 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
         res.add(cornerCases);
 
         return res;
+    }
+
+    private <T,U> Set<T> createCornerCasesForGenericValue(Class<T> clazz, Class<U> parent){
+        // TODO: 14/09/2017 String?
+        if(Utils.isPrimitive(clazz)){
+            return handlePrimitiveSimple(clazz,parent);
+        } else {
+            return createCornerCasesForClass(clazz);
+        }
     }
 }

@@ -12,11 +12,12 @@ import v2.creators.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SimpleNormalCaseInstantiator implements InstantiatorNormal {
+public class SimpleNormalCaseInstantiator implements InstantiatorNormal, ListCreatorSI, MapCreatorSI, SetCreatorSI {
     private Set<Class> visiting = Sets.newHashSet();
     private ClassCreatorMapSI classInstMap = new ClassCreatorMapSI();
     //seems there is no way to verify that the class creator has the correct type
@@ -108,11 +109,18 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal {
         } else if(fieldType.equals(String.class)) {
             return (U) UUID.randomUUID().toString();
         } else if(fieldType.equals(List.class)){
-            return fieldType.cast(Lists.newArrayList()); // TODO: 12/09/2017 What to do ehre?
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[0];
+            return (U) createList(genericParamValue,clazz,randomness);
         } else if(fieldType.equals(Set.class)){
-            return fieldType.cast(Sets.newHashSet()); // TODO: 12/09/2017 What to do here?
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[0];
+            return (U) createSet(genericParamValue, clazz,randomness);
         } else if(fieldType.equals(Map.class)){
-            return fieldType.cast(Maps.newHashMap()); // TODO: 12/09/2017 What to do here?
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
+            Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[1];
+            return (U) createMap(genericParamKey,genericParamValue,clazz,randomness);
         }
 
         try {
@@ -121,5 +129,37 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal {
             e.printStackTrace();
         }
         return null; // TODO: 12/09/2017 What to do here??
+    }
+
+    @Override
+    public <T,U> List<T> createList(Class<T> clazz, Class<U> parent, SourceOfRandomness randomness) {
+        int size = randomness.nextInt(0,50); // TODO: 14/09/2017 Configuration
+        List<T> res = Lists.newArrayList();
+        for (int i = 0; i < size; i++) {
+            res.add(createInstance(clazz,randomness));
+        }
+        return res;
+    }
+
+    @Override
+    public <T, U,V> Map<T, U> createMap(Class<T> keyClazz, Class<U> valueClazz, Class<V> parent, SourceOfRandomness randomness) {
+        int size = randomness.nextInt(0,50); // TODO: 14/09/2017 Configuration
+        Map<T,U> res = Maps.newHashMap();
+        for (int i = 0; i < size; i++) {
+            T key = createInstance(keyClazz,randomness);
+            U value = createInstance(valueClazz, randomness);
+            res.put(key,value);
+        }
+        return res;
+    }
+
+    @Override
+    public <T,U> Set<T> createSet(Class<T> clazz, Class<U> parent, SourceOfRandomness randomness) {
+        int size = randomness.nextInt(0,50); // TODO: 14/09/2017 Configuration
+        Set<T> res = Sets.newHashSet();
+        for (int i = 0; i < size; i++) {
+            res.add(createInstance(clazz,randomness));
+        }
+        return res;
     }
 }
