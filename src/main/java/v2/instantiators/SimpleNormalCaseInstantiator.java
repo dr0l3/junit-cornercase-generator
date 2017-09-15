@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import io.atlassian.fugue.Either;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import org.reflections.Reflections;
@@ -24,6 +25,7 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal, ListCre
     private FieldCreatorMapSI fieldInClassInstMap = new FieldCreatorMapSI();
     private Map<Class, PrimitiveCreatorSI> primitiveInClassInstMap = Maps.newConcurrentMap();
     private PrimitiveCreatorSI defaultPrimitiveCreator = new SimpleNormalPrimCreator(); // FIXME: 12/09/2017 INitialization
+    private Stack<Either<Class,Field>> path = new Stack<>();
 
     private <T,U> U handlePrimitive(Field field, Class<T> clazz, Class<U> fieldType, SourceOfRandomness randomness) {
         String fieldName = field.getName();
@@ -39,10 +41,10 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal, ListCre
     @Override
     public <T> T createInstance(Class<T> clazz, SourceOfRandomness randomness) {
 //        System.out.println("Class: " + clazz + " time " +System.currentTimeMillis());
-        long start = System.currentTimeMillis();
         if(visiting.contains(clazz)){
-            return null; // TODO: 12/09/2017 What to do here?
+            throw new RuntimeException("Recursive definition! class " + clazz + " has already been visited"); // TODO: 15/09/2017 Better
         }
+        path.push(Either.left(clazz));
         visiting.add(clazz);
         if(clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())){
             Set<Class<? extends T>> subtypes;
@@ -54,16 +56,25 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal, ListCre
             }
             int subtypeINdex = randomness.nextInt(0, subtypes.size()-1);
             Class<? extends T> next = new ArrayList<>(subtypes).get(subtypeINdex);
-            visiting.remove(clazz);
-            return createInstance(next,randomness);
+
+            T res = createInstance(next,randomness);
+            visiting.remove(clazz); // FIXME: 15/09/2017 Is this correct?
+            path.pop();
+            return res;
         }
 
         try {
+            if(Utils.isPrimitive(clazz)){
+                visiting.remove(clazz);
+                return defaultPrimitiveCreator.getValueForType(clazz,randomness);
+            }
             boolean zeroArgConstructors = Stream.of(clazz.getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
             if(!zeroArgConstructors){
-                ClassCreatorSI<T> strategy = classInstMap.getOrDefault(clazz, new NullClassCreator<>()); // TODO: 12/09/2017 What to do here?
-
-                return strategy.createInstance();
+                if(classInstMap.containsKey(clazz)){
+                    return classInstMap.get(clazz).createInstance();
+                } else {
+                    throw new RuntimeException("Unable to instantiate class of type " + clazz); // TODO: 15/09/2017 Better
+                }
             }
 
             List<Field> fields = Arrays.asList(clazz.getDeclaredFields());
@@ -88,44 +99,56 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal, ListCre
                 field.setAccessible(false);
             }
             visiting.remove(clazz);
+            path.pop();
             return inst;
         } catch (Exception e){
-            e.printStackTrace();
             visiting.remove(clazz);
-            return null; // TODO: 12/09/2017 What to do here??
+            System.out.println(path);
+            e.printStackTrace();
+            throw new RuntimeException("Exception doing creation of class " + clazz + ". error reported was " + e.getMessage()); // TODO: 15/09/2017 Better
         }
     }
 
     public <T,U> U createCornerCasesForField(Field field, Class<T> clazz, Class<U> fieldType, SourceOfRandomness randomness){
+        path.push(Either.right(field));
         if(fieldType.isEnum()) {
             List<U> possibles = Arrays.asList(fieldType.getEnumConstants());
             int index = randomness.nextInt(0,possibles.size()-1);
+            path.pop();
             return possibles.get(index);
         } else if(Utils.isPrimitive(fieldType)){
+            path.pop();
             return handlePrimitive(field,clazz,fieldType, randomness);
         } else if(fieldType.equals(String.class)) {
+            path.pop();
             return (U) UUID.randomUUID().toString();
         } else if(fieldType.equals(List.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[0];
+            path.pop();
             return (U) createList(genericParamValue,clazz,randomness);
         } else if(fieldType.equals(Set.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[0];
+            path.pop();
             return (U) createSet(genericParamValue, clazz,randomness);
         } else if(fieldType.equals(Map.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
             Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[1];
+            path.pop();
             return (U) createMap(genericParamKey,genericParamValue,clazz,randomness);
         }
 
         try {
-            return createInstance(fieldType,randomness);
+            U res = createInstance(fieldType,randomness);
+            path.pop();
+            return res;
         } catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
-        return null; // TODO: 12/09/2017 What to do here??
+        System.out.println(path);
+        throw new RuntimeException("Unable to instantiate field " + field.getName() + " in " + clazz + ". Dont know how to deal with type " + fieldType); // TODO: 15/09/2017 Better
     }
 
     @Override

@@ -7,10 +7,7 @@ import example.phasefour.Person;
 import example.phasefour.Pocket;
 import example.phasefour.Vehicle;
 import org.junit.runner.RunWith;
-import v2.generators.phasefour.PersonWithPositiveAgeGenerator;
-import v2.generators.phasefour.PersonWithPositiveAgeGeneratorNullable;
-import v2.generators.phasefour.PocketWithPersonNonNegGenerator;
-import v2.generators.phasefour.VehicleGenerator;
+import v2.generators.phasefour.*;
 
 import static org.hamcrest.MatcherAssert.*;
 
@@ -18,20 +15,23 @@ import static org.hamcrest.MatcherAssert.*;
 public class PhaseFour {
     //constraints and configuration
     /**
-     * Configuration
+     * Configuration of instantiators
      *  - General Primitive Strategy
      *  - Primitive Strategy per class
      *  - Field Strategy
-     * Constraints
-     *  - yes...
+     * Configuration of Creators
+     *  - Constraints
+     *  - Transformers
      */
 
+    //general primitive strategy
     @Property
     public void personWithNonnegativeAge(@From(PersonWithPositiveAgeGenerator.class) Person person){
         assertThat("nonnegative age",person.getAge() > -1);
         assertThat("nonnegative age",person.getAgeInMonths() > -1);
     }
 
+    //general primitive strategy
     @Property
     public void personWithNonnegativeAgeWithNulls(@From(PersonWithPositiveAgeGeneratorNullable.class) Person person){
         assertThat("nonnegative age",person.getAge() > -1);
@@ -40,6 +40,7 @@ public class PhaseFour {
         }
     }
 
+    //primitive strategy for specific class
     @Property
     public void pocketWithPrimitiveStrategyPerClass(@From(PocketWithPersonNonNegGenerator.class) Pocket pocket){
         System.out.println(pocket);
@@ -47,9 +48,26 @@ public class PhaseFour {
         assertThat("nonnegative age",pocket.getOwner().getAgeInMonths() > -1);
     }
 
+    //field configuration
     @Property
-    public void vehicleWithEventNumberofWheels(@From(VehicleGenerator.class)Vehicle vehicle){
+    public void vehicleWithEvenNumberOfWheels(@From(VehicleGenerator.class) Vehicle vehicle){
         System.out.println(vehicle);
-        assertThat("nonnegative age",vehicle.getWheels() % 2 ==  0);
+        assertThat("even number of wheels",vehicle.getWheels() % 2 ==  0);
     }
+
+
+
+    //predicates
+    @Property
+    public void vehicleWithPredicateNumberOfWheels(@From(VehiclePredicateGenerator.class) Vehicle vehicle){
+        System.out.println(vehicle);
+        assertThat("event number of wheels",vehicle.getWheels() % 2 == 0);
+    }
+
+    @Property
+    public void vehicleWithTransformerNumberOfWheels(@From(VehiclePredicateGenerator.class) Vehicle vehicle){
+        System.out.println(vehicle);
+        assertThat("Even number of wheels", vehicle.getWheels() % 2 == 0);
+    }
+
 }

@@ -19,4 +19,8 @@ public class ClassCreatorMap {
     public <T> ClassCreator<T> getOrDefault(Class<T> key, ClassCreator<T> defaultCreator){
         return (ClassCreator<T>) map.getOrDefault(key,defaultCreator);
     }
+
+    public <T> boolean containsKey(Class<T> key){
+        return map.containsKey(key);
+    }
 }
