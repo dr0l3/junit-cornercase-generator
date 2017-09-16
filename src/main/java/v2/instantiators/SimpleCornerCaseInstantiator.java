@@ -80,6 +80,10 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
                     .map(entry -> entry.getValue().size())
                     .reduce(0, Math::max);
 
+            if(complexity == 0){
+                return Sets.newHashSet(clazz.newInstance());
+            }
+
             res = new HashSet<>();
             for (int i = 0; i < complexity; i++) {
                 T inst = clazz.newInstance();
@@ -87,8 +91,7 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
 
                     Field field = entry.getKey();
                     field.setAccessible(true);
-                    List<?> values = Arrays.asList(entry.getValue().toArray());
-                    Collections.shuffle(values);
+                    List<?> values = Arrays.asList(entry.getValue().toArray()); //Dont shuffle this list!
                     Object value = values.get((i%values.size()));
                     field.set(inst,value);
                     field.setAccessible(false);
