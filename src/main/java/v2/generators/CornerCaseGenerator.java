@@ -16,7 +16,8 @@ public abstract class CornerCaseGenerator<T> extends Generator<T>implements
         PrimitiveCreatorConfigurator<CornerCaseGenerator<T>>,
         NullableConfigurator<CornerCaseGenerator<T>>,
         PrimitiveCreatorPerClassConfigurator<CornerCaseGenerator<T>>,
-        FieldCreatorConfigurator<CornerCaseGenerator<T>>
+        FieldCreatorConfigurator<CornerCaseGenerator<T>>,
+        ClassCreatorConfigurator<CornerCaseGenerator<T>>
 {
     private List<T> cornerCases;
     private InstantiatorCornerCase instantiator;
@@ -26,6 +27,7 @@ public abstract class CornerCaseGenerator<T> extends Generator<T>implements
     public CornerCaseGenerator(Class<T> clazz){
         super(clazz);
         this.type = clazz;
+        this.instantiator = new SimpleCornerCaseInstantiator();
     }
     /**
      * Generates a value, possibly influenced by a source of randomness and
@@ -84,6 +86,12 @@ public abstract class CornerCaseGenerator<T> extends Generator<T>implements
     @Override
     public <U, V> CornerCaseGenerator<T> withCreatorForField(Class<U> parentClass, String name, Class<V> fieldClass, ClassCreator creator) {
         this.instantiator.withCreatorForField(parentClass,name,fieldClass,creator);
+        return this;
+    }
+
+    @Override
+    public <U> CornerCaseGenerator<T> withCreatorForClass(Class<U> clazz, ClassCreator<U> creator) {
+        this.instantiator = instantiator.withCreatorForClass(clazz,creator);
         return this;
     }
 }

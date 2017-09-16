@@ -3,10 +3,7 @@ package v2.creators;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -17,8 +14,11 @@ public class SimpleClassCreator<T> implements ClassCreator<T> {
     private Supplier<T> normalCases;
     private List<Predicate<T>> preds = Lists.newArrayList();
     private Function<T,T> transformer;
+    private Class<T> clazz;
 
-    public SimpleClassCreator() {
+
+    public SimpleClassCreator(Class<T> clazz) {
+        this.clazz = clazz;
     }
 
     public void setCornerCases(Set<T> cornerCases) {
@@ -49,9 +49,17 @@ public class SimpleClassCreator<T> implements ClassCreator<T> {
     @Override
     public T createInstance() {
         if(normalCases == null){
-            Random r = new Random();
-            int index = r.nextInt(cornerCases.size()-1);
-            return new ArrayList<>(cornerCases).get(index); // TODO: 14/09/2017 THis is not pretty
+            Set<T> cases = cornerCases.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+            if(cases.size() > 1){
+                Random r = new Random();
+                int index = r.nextInt(cases.size()-1);
+                return new ArrayList<>(cases).get(index); // TODO: 14/09/2017 THis is not pretty
+            } else if(cases.size() == 1){
+                return cases.iterator().next();
+            } else {
+                throw new RuntimeException("Trying to create instance of type "+ clazz +" with no candidates");
+            }
+
         } else {
             return normalCases.get();
         }

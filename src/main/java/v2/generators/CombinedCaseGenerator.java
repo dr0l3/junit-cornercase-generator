@@ -22,7 +22,9 @@ public abstract class CombinedCaseGenerator<T> extends Generator<T>implements
         PrimitiveCreatorPerClassConfigurator<CombinedCaseGenerator<T>>,
         PrimitiveCreatorSIPerClassConfigurator<CombinedCaseGenerator<T>>,
         FieldCreatorConfigurator<CombinedCaseGenerator<T>>,
-        FieldCreatorSIConfigurator<CombinedCaseGenerator<T>>{
+        FieldCreatorSIConfigurator<CombinedCaseGenerator<T>>,
+        ClassCreatorConfigurator<CombinedCaseGenerator<T>>,
+        ClassCreatorSIConfigurator<CombinedCaseGenerator<T>>{
     private List<T> cornerCases;
     private int iterator;
     private Class<T> type;
@@ -95,14 +97,27 @@ public abstract class CombinedCaseGenerator<T> extends Generator<T>implements
     }
 
     @Override
-    public <U, V> CombinedCaseGenerator<T> withCreatorForField(Class<U> parentClass, String name, Class<V> fieldClass, ClassCreator creator) {
-        this.instantiatorCornerCase = instantiatorCornerCase.withCreatorForField(parentClass,name,fieldClass,creator);
+    public <U, V> CombinedCaseGenerator<T> withCreatorForField(Class<U> parentClass, String fieldName, Class<V> fieldClass, ClassCreator creator) {
+        this.instantiatorCornerCase = instantiatorCornerCase.withCreatorForField(parentClass,fieldName,fieldClass,creator);
         return this;
     }
 
     @Override
-    public <U, V> CombinedCaseGenerator<T> withCreatorForField(Class<U> parentClass, String name, Class<V> fieldClass, ClassCreatorSI creator) {
-        this.instantiatorNormal = instantiatorNormal.withCreatorForField(parentClass,name,fieldClass,creator);
+    public <U, V> CombinedCaseGenerator<T> withCreatorForField(Class<U> parentClass, String fieldName, Class<V> fieldClass, ClassCreatorSI creator) {
+        this.instantiatorNormal = instantiatorNormal.withCreatorForField(parentClass,fieldName,fieldClass,creator);
+        return this;
+    }
+
+    @Override
+    public <U> CombinedCaseGenerator<T> withCreatorForClass(Class<U> clazz, ClassCreator<U> creator) {
+        this.instantiatorCornerCase = instantiatorCornerCase.withCreatorForClass(clazz,creator);
+        this.instantiatorNormal = instantiatorNormal.withCreatorForClass(clazz,creator);
+        return this;
+    }
+
+    @Override
+    public <U> CombinedCaseGenerator<T> withCreatorForClass(Class<U> clazz, ClassCreatorSI<U> creator) {
+        this.instantiatorNormal = instantiatorNormal.withCreatorForClass(clazz,creator);
         return this;
     }
 }

@@ -11,7 +11,6 @@ import v2.FieldCreatorMap;
 import v2.SubTypeMap;
 import v2.Utils;
 import v2.creators.*;
-import v2.generators.PrimitiveCreatorConfigurator;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -33,54 +32,55 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
 
     @Override
     public <T> Set<T> createCornerCasesForClass(Class<T> clazz) {
+        Set<T> res;
+        if(classInstMap.containsKey(clazz)){
+            res = classInstMap.get(clazz).createCornerCases();
+            return res;
+        }
 
         if(visiting.contains(clazz)){
-            System.out.println(path);
-            throw new RuntimeException("Recursive definition! class " + clazz + " has already been visited"); // TODO: 15/09/2017 Better
+            throw Utils.createRecursivePathException(clazz,path);
         }
+
         path.push(Either.left(clazz));
         visiting.add(clazz);
-        System.out.println("Creating corner clases for class: " + clazz.toString());
+
 
         if(clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())){
-            Set<Class<? extends T>> subtypes;
-            if(SubTypeMap.containsKey(clazz)){
-                subtypes = SubTypeMap.get(clazz);
-            } else {
-                subtypes = SubTypeMap.reflections.getSubTypesOf(clazz);
-                SubTypeMap.put(clazz,subtypes);
-            }
-            visiting.remove(clazz); // FIXME: 15/09/2017 Is this even corect?
-            return subtypes.stream().flatMap(subtype -> createCornerCasesForClass(subtype).stream()).collect(Collectors.toSet());
+            return SubTypeMap.getImplementations(clazz)
+                    .map(subs -> {
+                        Set<T> cornerCases = subs.stream()
+                                .flatMap(subtype -> createCornerCasesForClass(subtype).stream())
+                                .collect(Collectors.toSet());
+                        visiting.remove(clazz);
+                        path.pop();
+                        return cornerCases;})
+                    .orElseThrow(() -> Utils.createNoimplementationsForClassException(clazz,path));
         }
+
+        boolean zeroArgConstructors = Stream.of(clazz.getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
+        if(!zeroArgConstructors){
+            System.out.println(path);
+            throw Utils.createUnknownClassException(clazz,path);
+        }
+
+        List<Field> fields = Arrays.asList(clazz.getDeclaredFields());
+        List<Field> filtered = fields.stream()
+                .filter(field -> !field.isAccessible())
+                .filter(field -> !Modifier.isFinal(field.getModifiers()))
+                .filter(field -> !Modifier.isStatic(field.getModifiers()))
+                .collect(Collectors.toList());
+
         try {
-            boolean zeroArgConstructors = Stream.of(clazz.getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
-            if(!zeroArgConstructors){
-                if(classInstMap.containsKey(clazz)){
-                    return classInstMap.get(clazz).createCornerCases();
-                } else {
-                    System.out.println(path);
-                    throw new RuntimeException("Unable to instantiate class of type " + clazz); // TODO: 15/09/2017 Better
-                }
-            }
-
-            List<Field> fields = Arrays.asList(clazz.getDeclaredFields());
-            List<Field> filtered = fields.stream()
-                    .filter(field -> !field.isAccessible())
-                    .filter(field -> !Modifier.isFinal(field.getModifiers()))
-                    .filter(field -> !Modifier.isStatic(field.getModifiers()))
-                    .collect(Collectors.toList());
-
-
             Map<Field,Set<?>> valuesByField = filtered.stream()
                     .map(field -> Pair.with(field, new HashSet<>(createCornerCasesForField(field, clazz, field.getType()))))
                     .collect(Collectors.toMap(Pair::getValue0, Pair::getValue1));
 
-
             int complexity = valuesByField.entrySet().stream()
                     .map(entry -> entry.getValue().size())
                     .reduce(0, Math::max);
-            Set<T> res = new HashSet<>();
+
+            res = new HashSet<>();
             for (int i = 0; i < complexity; i++) {
                 T inst = clazz.newInstance();
                 for (Map.Entry<Field, Set<?>> entry: valuesByField.entrySet()){
@@ -96,61 +96,60 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
                 res.add(inst);
             }
             visiting.remove(clazz);
+            path.pop();
             return res;
         } catch (Exception e){
-//            e.printStackTrace();
-            visiting.remove(clazz);
             System.out.println(path);
-            throw new RuntimeException("Exception doing creation of class " + clazz + ". error reported was " + e.getMessage()); // TODO: 15/09/2017 Better
+            throw Utils.createExceptionForPath(clazz,path, e);
         }
     }
 
 
     public <T,U> Set<U> createCornerCasesForField(Field field, Class<T> clazz, Class<U> fieldType){
         path.push(Either.right(field));
+        Set<U> res;
         if(fieldType.isEnum()) {
+            res = new HashSet<>(Arrays.asList(fieldType.getEnumConstants()));
             path.pop();
-            return new HashSet<>(Arrays.asList(fieldType.getEnumConstants()));
+            return res;
         } else if(Utils.isPrimitive(fieldType)){
+            res = handlePrimitive(field,clazz,fieldType);
             path.pop();
-            return handlePrimitive(field,clazz,fieldType);
+            return res;
         } else if(fieldType.equals(String.class)) {
-            HashSet<String> res = new HashSet<>(Arrays.asList(java.util.UUID.randomUUID().toString(), ""));
+            res = (Set<U>) new HashSet<>(Arrays.asList(java.util.UUID.randomUUID().toString(), ""));
             if(allowNullMap.getOrDefault(clazz,allowNull)){
                 res.add(null);
             }
             path.pop();
-            return (Set<U>) res;
+            return res;
         } else if(fieldType.equals(List.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
+            res = (Set<U>) createLists(genericParam, clazz);
             path.pop();
-            return (Set<U>) createLists(genericParam, clazz);
+            return res;
         } else if(fieldType.equals(Set.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
+            res = (Set<U>) createSets(genericParam, clazz);
             path.pop();
-            return (Set<U>) createSets(genericParam, clazz);
+            return res;
         } else if(fieldType.equals(Map.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
             Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[1];
+            res = (Set<U>) createMaps(genericParamKey,genericParamValue, clazz);
             path.pop();
-            return (Set<U>) createMaps(genericParamKey,genericParamValue, clazz);
-        }
-
-        try {
-            Set<U> cornerCasesForComplexType = createCornerCasesForClass(fieldType);
+            return res;
+        } else {
+            res = createCornerCasesForClass(fieldType);
             if(allowNullMap.getOrDefault(clazz, allowNull)){
-                cornerCasesForComplexType.add(null);
+                res.add(null);
             }
             path.pop();
-            return cornerCasesForComplexType;
-        } catch (Exception e) {
-//            e.printStackTrace();
+            return res;
         }
-        System.out.println(path);
-        throw new RuntimeException("Unable to instantiate field " + field.getName() + " in " + clazz + ". Dont know how to deal with type " + fieldType); // TODO: 15/09/2017 Better
     }
 
     private <T,U> Set<T> handlePrimitiveSimple(Class<T> clazz, Class<U> parent){
@@ -264,7 +263,7 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
     }
 
     private <T,U> Set<T> createCornerCasesForGenericValue(Class<T> clazz, Class<U> parent){
-        // TODO: 14/09/2017 String?
+        // TODO: 14/09/2017 String? Nested generic value?
         if(Utils.isPrimitive(clazz)){
             return handlePrimitiveSimple(clazz,parent);
         } else {
@@ -293,6 +292,12 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
     @Override
     public <U, V> InstantiatorCornerCase withCreatorForField(Class<U> parentClass, String name, Class<V> fieldClass, ClassCreator creator) {
         this.fieldInClassInstMap.put(Triplet.with(parentClass,name, fieldClass), creator);
+        return this;
+    }
+
+    @Override
+    public <U> InstantiatorCornerCase withCreatorForClass(Class<U> clazz, ClassCreator<U> creator) {
+        this.classInstMap.put(clazz,creator);
         return this;
     }
 }

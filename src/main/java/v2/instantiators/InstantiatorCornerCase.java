@@ -7,6 +7,7 @@ import java.util.Set;
 public interface InstantiatorCornerCase extends PrimitiveCreatorConfigurator<InstantiatorCornerCase>,
         NullableConfigurator<InstantiatorCornerCase>,
         PrimitiveCreatorPerClassConfigurator<InstantiatorCornerCase>,
-        FieldCreatorConfigurator<InstantiatorCornerCase> {
+        FieldCreatorConfigurator<InstantiatorCornerCase>,
+        ClassCreatorConfigurator<InstantiatorCornerCase>{
     <T> Set<T> createCornerCasesForClass(Class<T> clazz);
 }

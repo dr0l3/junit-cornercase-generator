@@ -12,9 +12,9 @@ import java.util.Random;
 public class VechileGeneratorTransformer extends CombinedCaseGenerator<Vehicle> {
     public VechileGeneratorTransformer() {
         super(Vehicle.class);
-        ClassCreatorSI<Integer> wheelGenerator = ClassCreatorFactory.fromSupplier(() -> new Random().nextInt(100))
+        ClassCreatorSI<Integer> wheelGenerator = ClassCreatorFactory.fromSupplier(() -> new Random().nextInt(100), Integer.class)
                 .withTransformer(i -> i*2);
-        ClassCreator<Integer> wheelCornerCases = ClassCreatorFactory.fromSet(Sets.newHashSet(0,100));
+        ClassCreator<Integer> wheelCornerCases = ClassCreatorFactory.fromSet(Sets.newHashSet(0,100), Integer.class);
         withCreatorForField(Vehicle.class,"wheels",Integer.class, wheelGenerator);
         withCreatorForField(Vehicle.class,"wheels",Integer.class, wheelCornerCases);
     }

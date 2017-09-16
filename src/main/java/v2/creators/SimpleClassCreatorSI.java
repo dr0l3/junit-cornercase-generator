@@ -13,15 +13,16 @@ public class SimpleClassCreatorSI<T> implements ClassCreatorSI<T> {
     private List<Predicate<T>> preds = Lists.newArrayList();
     private Function<T,T> transformer;
     private int MAX_ATTEMPTS = 1000;
+    private Class<T> clazz;
 
-    public SimpleClassCreatorSI(Supplier<T> supplier) {
+    public SimpleClassCreatorSI(Supplier<T> supplier, Class<T> clazz) {
         this.supplier = supplier;
+        this.clazz = clazz;
     }
-
 
     @Override
     public T createInstance() {
-        return Utils.getNextValue(preds,transformer,supplier,MAX_ATTEMPTS);
+        return Utils.getNextValue(preds,transformer,supplier,MAX_ATTEMPTS, clazz);
     }
 
     @Override

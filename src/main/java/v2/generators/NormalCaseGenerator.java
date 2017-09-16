@@ -11,10 +11,11 @@ import v2.instantiators.SimpleNormalCaseInstantiator;
 public abstract class NormalCaseGenerator<T> extends Generator<T> implements
         PrimitiveCreatorSIConfigurator<NormalCaseGenerator<T>>,
         PrimitiveCreatorSIPerClassConfigurator<NormalCaseGenerator<T>>,
-        FieldCreatorSIConfigurator<NormalCaseGenerator<T>>
+        FieldCreatorSIConfigurator<NormalCaseGenerator<T>>,
+        ClassCreatorSIConfigurator<NormalCaseGenerator<T>>
 {
     private Class<T> type;
-    private InstantiatorNormal instantiatorNormal;
+    private InstantiatorNormal instantiatorNormal = new SimpleNormalCaseInstantiator();
 
     public NormalCaseGenerator(Class<T> clazz){
         super(clazz);
@@ -59,6 +60,12 @@ public abstract class NormalCaseGenerator<T> extends Generator<T> implements
     @Override
     public <U, V> NormalCaseGenerator<T> withCreatorForField(Class<U> parentClass, String name, Class<V> fieldClass, ClassCreatorSI creator) {
         this.instantiatorNormal = instantiatorNormal.withCreatorForField(parentClass,name,fieldClass,creator);
+        return this;
+    }
+
+    @Override
+    public <U> NormalCaseGenerator<T> withCreatorForClass(Class<U> clazz, ClassCreatorSI<U> creator) {
+        this.instantiatorNormal = instantiatorNormal.withCreatorForClass(clazz,creator);
         return this;
     }
 }
