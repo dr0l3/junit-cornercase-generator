@@ -3,6 +3,7 @@ package v2.generators;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import v2.Path;
 import v2.creators.ClassCreatorSI;
 import v2.creators.PrimitiveCreatorSI;
 import v2.instantiators.InstantiatorNormal;
@@ -36,7 +37,7 @@ public abstract class NormalCaseGenerator<T> extends Generator<T> implements
     @Override
     public T generate(SourceOfRandomness random, GenerationStatus status) {
         initializeOrNothing();
-        return instantiatorNormal.createInstance(type,random);
+        return instantiatorNormal.createInstance(type,random, Path.empty());
     }
 
     private void initializeOrNothing(){

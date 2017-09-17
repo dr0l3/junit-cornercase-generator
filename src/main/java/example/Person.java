@@ -8,6 +8,15 @@ public class Person {
     private List<Person> family;
     private Jacket jacket;
 
+    public Person(String name) {
+        this.name = name;
+    }
+
+    public Person(String name, List<Person> family) {
+        this.name = name;
+        this.family = family;
+    }
+
     public String getName() {
         return name;
     }

@@ -1,6 +1,7 @@
 package v2;
 
 import com.google.common.collect.Maps;
+import io.vavr.control.Option;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -25,16 +26,16 @@ public class SubTypeMap {
         return (Set<Class<? extends T>>) map.get(key);
     }
 
-    public static <T> Optional<Set<Class<? extends T>>> getImplementations(Class<T> baseClass){
+    public static <T> Option<Set<Class<? extends T>>> getImplementations(Class<T> baseClass){
         if(map.containsKey(baseClass)){
-            return Optional.of((Set<Class<? extends T>>) map.get(baseClass));
+            return Option.of((Set<Class<? extends T>>) map.get(baseClass));
         } else {
             Set<Class<? extends T>> subtypes = SubTypeMap.reflections.getSubTypesOf(baseClass);
             if(subtypes.size() > 0){
                 SubTypeMap.put(baseClass,subtypes);
-                return Optional.of(subtypes);
+                return Option.of(subtypes);
             } else {
-                return Optional.empty();
+                return Option.none();
             }
         }
     }

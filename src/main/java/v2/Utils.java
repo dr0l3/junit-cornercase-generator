@@ -1,6 +1,7 @@
 package v2;
 
-import io.atlassian.fugue.Either;
+
+import io.vavr.control.Either;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -52,37 +53,32 @@ public class Utils {
         return candidate;
     }
 
-    public static <T> CustomRuntimeException createUnknownClassException(Class<T> clazz, Stack<Either<Class,Field>> stack){
-        String pathMessage = pathMessage(stack);
+    public static <T> CustomRuntimeException createUnknownClassException(Class<T> clazz, Path path){
+        String pathMessage = path.getPathAsString();
         String message = String.format("Error: Don't know how to instantiate %s. Path walked: [%s] Class %s does not have a zeroArg constructor. Add a ClassCreator to the generator.", clazz.getName(), pathMessage, clazz.getName());
         return new CustomRuntimeException(message);
     }
 
-    public static <T> RuntimeException createExceptionForPath(Class<T> clazz, Stack<Either<Class,Field>> stack, Exception e){
+    public static <T> RuntimeException createExceptionForPath(Class<T> clazz, Path path, Exception e){
         if(e instanceof CustomRuntimeException){
             return (CustomRuntimeException) e;
         } else {
-            String pathMessage = pathMessage(stack);
+            String pathMessage = path.getPathAsString();
             String message = String.format("Error during creation of %s. Path walked: [%s] Error encountered: %s", clazz.toString(), pathMessage, e.getMessage());
             return new RuntimeException(message, e);
         }
     }
 
-    public static <T> CustomRuntimeException createRecursivePathException(Class<T> clazz, Stack<Either<Class,Field>> stack){
-        String pathMessage = pathMessage(stack);
+    public static <T> CustomRuntimeException createRecursivePathException(Class<T> clazz, Path path){
+        String pathMessage = path.getPathAsString();
         String message = String.format("Error: Recursive path while processing %s. Path walked: [%s]", clazz.toString(), pathMessage);
         return new CustomRuntimeException(message);
     }
 
-    public static <T> CustomRuntimeException createNoimplementationsForClassException(Class<T> clazz, Stack<Either<Class,Field>> stack){
-        String pathMessage = pathMessage(stack);
+    public static <T> CustomRuntimeException createNoimplementationsForClassException(Class<T> clazz, Path path){
+        String pathMessage = path.getPathAsString();
         String message = String.format("Error: No implementations for class %s. Path walked: [%s]", clazz.toString(), pathMessage);
         return new CustomRuntimeException(message);
     }
 
-    private static String pathMessage(Stack<Either<Class, Field>> stack) {
-        return stack.stream()
-                    .map(v -> v.fold(c -> "Class: " + c.getName()+". ", f -> "Field: " + f.getName()+ ". "))
-                    .reduce("", (acc,next) -> acc + next);
-    }
 }

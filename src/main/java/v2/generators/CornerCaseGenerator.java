@@ -3,6 +3,7 @@ package v2.generators;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import v2.Path;
 import v2.creators.ClassCreator;
 import v2.creators.PrimitiveCreator;
 import v2.instantiators.InstantiatorCornerCase;
@@ -60,7 +61,7 @@ public abstract class CornerCaseGenerator<T> extends Generator<T>implements
         }
 
         if(this.cornerCases == null){
-            this.cornerCases = new ArrayList<>(instantiator.createCornerCasesForClass(type));
+            this.cornerCases = new ArrayList<>(instantiator.createCornerCasesForClass(type,Path.empty()));
             this.iterator = 0;
         }
     }

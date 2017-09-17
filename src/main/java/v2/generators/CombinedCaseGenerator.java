@@ -3,6 +3,7 @@ package v2.generators;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import v2.Path;
 import v2.creators.ClassCreator;
 import v2.creators.ClassCreatorSI;
 import v2.creators.PrimitiveCreator;
@@ -53,7 +54,7 @@ public abstract class CombinedCaseGenerator<T> extends Generator<T>implements
         if(iterator < cornerCases.size())
             res = cornerCases.get(iterator);
         else
-            res = instantiatorNormal.createInstance(type,random);
+            res = instantiatorNormal.createInstance(type,random, Path.empty());
 
         this.iterator = this.iterator+1;
         return res;
@@ -61,7 +62,7 @@ public abstract class CombinedCaseGenerator<T> extends Generator<T>implements
 
     private void initializeOrNothing(){
         if(this.cornerCases == null){
-            this.cornerCases = new ArrayList<>(instantiatorCornerCase.createCornerCasesForClass(type));
+            this.cornerCases = new ArrayList<>(instantiatorCornerCase.createCornerCasesForClass(type, Path.empty()));
             this.iterator = 0;
         }
     }

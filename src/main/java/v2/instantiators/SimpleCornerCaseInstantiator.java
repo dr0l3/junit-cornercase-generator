@@ -3,13 +3,11 @@ package v2.instantiators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import io.atlassian.fugue.Either;
+import io.vavr.control.Either;
+import io.vavr.control.Option;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
-import v2.ClassCreatorMap;
-import v2.FieldCreatorMap;
-import v2.SubTypeMap;
-import v2.Utils;
+import v2.*;
 import v2.creators.*;
 
 import java.lang.reflect.Field;
@@ -20,137 +18,123 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,ListCreator,SetCreator,MapCreator{
-    private Set<Class> visiting = Sets.newHashSet();
     private ClassCreatorMap classInstMap = new ClassCreatorMap();
     private boolean allowNull = true;
     private Map<Class,Boolean> allowNullMap = Maps.newConcurrentMap();
-    //seems there is no way to verify that the class creator has the correct type
     private FieldCreatorMap fieldInClassInstMap = new FieldCreatorMap();
     private Map<Class, PrimitiveCreator> primitiveInClassInstMap = Maps.newConcurrentMap();
     private PrimitiveCreator defaultPrimitiveCreator = new SimpleCCPrimCreator();
-    private Stack<Either<Class,Field>> path = new Stack<>();
+
+
 
     @Override
-    public <T> Set<T> createCornerCasesForClass(Class<T> clazz) {
+    public <T> Set<T> createCornerCasesForClass(Class<T> clazz, Path path) {
         Set<T> res;
         if(classInstMap.containsKey(clazz)){
-            res = classInstMap.get(clazz).createCornerCases();
+            res = classInstMap.get(clazz).get().createCornerCases();
             return res;
         }
 
-        if(visiting.contains(clazz)){
+        if(path.contains(clazz)){
             throw Utils.createRecursivePathException(clazz,path);
         }
 
-        path.push(Either.left(clazz));
-        visiting.add(clazz);
+        Path updated = path.append(clazz);
 
 
-        if(clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())){
-            return SubTypeMap.getImplementations(clazz)
-                    .map(subs -> {
-                        Set<T> cornerCases = subs.stream()
-                                .flatMap(subtype -> createCornerCasesForClass(subtype).stream())
-                                .collect(Collectors.toSet());
-                        visiting.remove(clazz);
-                        path.pop();
-                        return cornerCases;})
-                    .orElseThrow(() -> Utils.createNoimplementationsForClassException(clazz,path));
-        }
+        if(clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers()))
+            return (Set<T>) SubTypeMap.getImplementations(clazz)
+                    .map(subs -> subs.stream()
+                            .flatMap(subtype -> createCornerCasesForClass(subtype, updated).stream())
+                            .collect(Collectors.toSet()))
+                    .getOrElseThrow(() -> Utils.createNoimplementationsForClassException(clazz, updated));
 
         boolean zeroArgConstructors = Stream.of(clazz.getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
         if(!zeroArgConstructors){
-            System.out.println(path);
-            throw Utils.createUnknownClassException(clazz,path);
+            throw Utils.createUnknownClassException(clazz,updated);
         }
 
-        List<Field> fields = Arrays.asList(clazz.getDeclaredFields());
-        List<Field> filtered = fields.stream()
+        Map<Field,Set<?>> valuesByField = Arrays.stream(clazz.getDeclaredFields())
                 .filter(field -> !field.isAccessible())
                 .filter(field -> !Modifier.isFinal(field.getModifiers()))
                 .filter(field -> !Modifier.isStatic(field.getModifiers()))
-                .collect(Collectors.toList());
+                .map(field -> Pair.with(field, new HashSet<>(createCornerCasesForField(field, clazz, field.getType(), updated))))
+                .collect(Collectors.toMap(Pair::getValue0, Pair::getValue1));
 
         try {
-            Map<Field,Set<?>> valuesByField = filtered.stream()
-                    .map(field -> Pair.with(field, new HashSet<>(createCornerCasesForField(field, clazz, field.getType()))))
-                    .collect(Collectors.toMap(Pair::getValue0, Pair::getValue1));
 
-            int complexity = valuesByField.entrySet().stream()
+            Optional<Integer> maybeComplexity = valuesByField.entrySet().stream()
                     .map(entry -> entry.getValue().size())
-                    .reduce(0, Math::max);
+                    .max(Integer::compareTo);
 
-            if(complexity == 0){
-                return Sets.newHashSet(clazz.newInstance());
+            if(!maybeComplexity.isPresent()){
+                return Sets.newHashSet();
             }
 
             res = new HashSet<>();
-            for (int i = 0; i < complexity; i++) {
+            for (int i = 0; i < maybeComplexity.get(); i++) {
                 T inst = clazz.newInstance();
+
                 for (Map.Entry<Field, Set<?>> entry: valuesByField.entrySet()){
 
                     Field field = entry.getKey();
                     field.setAccessible(true);
                     List<?> values = Arrays.asList(entry.getValue().toArray()); //Dont shuffle this list!
                     Object value = values.get((i%values.size()));
-                    field.set(inst,value);
-                    field.setAccessible(false);
+                    updateField(inst, field, value);
                 }
                 res.add(inst);
             }
-            visiting.remove(clazz);
-            path.pop();
+
             return res;
         } catch (Exception e){
-            System.out.println(path);
-            throw Utils.createExceptionForPath(clazz,path, e);
+            throw Utils.createExceptionForPath(clazz, updated, e);
         }
     }
 
+    private <T> T updateField(T inst, Field field, Object value) throws IllegalAccessException {
+        field.set(inst,value);
+        field.setAccessible(false);
+        return inst;
+    }
 
-    public <T,U> Set<U> createCornerCasesForField(Field field, Class<T> clazz, Class<U> fieldType){
-        path.push(Either.right(field));
+
+    public <T,U> Set<U> createCornerCasesForField(Field field, Class<T> clazz, Class<U> fieldType, Path path){
+        path = path.append(field);
         Set<U> res;
         if(fieldType.isEnum()) {
             res = new HashSet<>(Arrays.asList(fieldType.getEnumConstants()));
-            path.pop();
             return res;
         } else if(Utils.isPrimitive(fieldType)){
             res = handlePrimitive(field,clazz,fieldType);
-            path.pop();
             return res;
         } else if(fieldType.equals(String.class)) {
             res = (Set<U>) new HashSet<>(Arrays.asList(java.util.UUID.randomUUID().toString(), ""));
             if(allowNullMap.getOrDefault(clazz,allowNull)){
                 res.add(null);
             }
-            path.pop();
             return res;
         } else if(fieldType.equals(List.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
-            res = (Set<U>) createLists(genericParam, clazz);
-            path.pop();
+            res = (Set<U>) createLists(genericParam, clazz, path);
             return res;
         } else if(fieldType.equals(Set.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
-            res = (Set<U>) createSets(genericParam, clazz);
-            path.pop();
+            res = (Set<U>) createSets(genericParam, clazz, path);
             return res;
         } else if(fieldType.equals(Map.class)){
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
             Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[1];
-            res = (Set<U>) createMaps(genericParamKey,genericParamValue, clazz);
-            path.pop();
+            res = (Set<U>) createMaps(genericParamKey,genericParamValue, clazz, path);
             return res;
         } else {
-            res = createCornerCasesForClass(fieldType);
+            res = createCornerCasesForClass(fieldType, path);
             if(allowNullMap.getOrDefault(clazz, allowNull)){
                 res.add(null);
             }
-            path.pop();
             return res;
         }
     }
@@ -182,7 +166,7 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
     }
 
     @Override
-    public <T,U> Set<List<T>> createLists(Class<T> clazz, Class<U> parent) {
+    public <T,U> Set<List<T>> createLists(Class<T> clazz, Class<U> parent, Path path) {
         //cases: empty list, list with 1 element, list with 2 elements, list with duplicates, list with null element
         Set<List<T>> res = Sets.newHashSet();
 
@@ -193,7 +177,7 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
         }
 
 
-        Set<T> cornerCases = createCornerCasesForGenericValue(clazz, parent);
+        Set<T> cornerCases = createCornerCasesForGenericValue(clazz, parent, path);
         T anElement = cornerCases.iterator().next();
         List<T> empty = Lists.newArrayList();
         List<T> singleElement = Arrays.asList(anElement);
@@ -208,12 +192,12 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
     }
 
     @Override
-    public <T, U,V> Set<Map<T, U> > createMaps(Class<T> key, Class<U> value, Class<V> parent) {
+    public <T, U,V> Set<Map<T, U> > createMaps(Class<T> key, Class<U> value, Class<V> parent, Path path) {
         Set<Map<T,U>> res = Sets.newHashSet();
         Random random = new Random();
 
-        Set<T> keys = createCornerCasesForGenericValue(key,parent);
-        Set<U> values = createCornerCasesForGenericValue(value,parent);
+        Set<T> keys = createCornerCasesForGenericValue(key, parent, path);
+        Set<U> values = createCornerCasesForGenericValue(value, parent, path);
 
         int maxSize = Math.max(keys.size(), values.size());
         List<T> keyList = Lists.newArrayList(keys);
@@ -245,7 +229,7 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
     }
 
     @Override
-    public <T,U> Set<Set<T>> createSets(Class<T> clazz, Class<U> parent) {
+    public <T,U> Set<Set<T>> createSets(Class<T> clazz, Class<U> parent, Path path) {
         Set<Set<T>> res = Sets.newHashSet();
 
         if(allowNullMap.getOrDefault(clazz, allowNull)){
@@ -254,7 +238,7 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
             res.add(null);
         }
 
-        Set<T> cornerCases = createCornerCasesForGenericValue(clazz, parent);
+        Set<T> cornerCases = createCornerCasesForGenericValue(clazz, parent, path);
         T anElement = cornerCases.iterator().next();
         Set<T> empty = Sets.newHashSet();
         Set<T> singleElement = Sets.newHashSet(anElement);
@@ -265,12 +249,12 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
         return res;
     }
 
-    private <T,U> Set<T> createCornerCasesForGenericValue(Class<T> clazz, Class<U> parent){
+    private <T,U> Set<T> createCornerCasesForGenericValue(Class<T> clazz, Class<U> parent, Path path){
         // TODO: 14/09/2017 String? Nested generic value?
         if(Utils.isPrimitive(clazz)){
             return handlePrimitiveSimple(clazz,parent);
         } else {
-            return createCornerCasesForClass(clazz);
+            return createCornerCasesForClass(clazz, path);
         }
     }
 
