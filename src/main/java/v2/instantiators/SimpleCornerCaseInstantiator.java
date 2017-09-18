@@ -10,9 +10,7 @@ import org.javatuples.Triplet;
 import v2.*;
 import v2.creators.*;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -124,11 +122,33 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
             Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
             res = (Set<U>) createSets(genericParam, clazz, path);
             return res;
-        } else if(fieldType.equals(Map.class)){
+        } else if(fieldType.equals(Map.class)) {
             ParameterizedType genericType = (ParameterizedType) field.getGenericType();
             Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
             Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[1];
-            res = (Set<U>) createMaps(genericParamKey,genericParamValue, clazz, path);
+            res = (Set<U>) createMaps(genericParamKey, genericParamValue, clazz, path);
+            return res;
+        }else if(fieldType.equals(io.vavr.collection.List.class)){
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
+            //generics/containers
+            //if class has generic parameters and has a static "of" or "from" method that takes either
+            // - a list
+            // - an iterable
+            return (Set<U>) createVavrList(genericParam,clazz,path);
+        }else if(fieldType.equals(io.vavr.collection.Set.class)){
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParam = (Class<?>) genericType.getActualTypeArguments()[0];
+            //generics/containers
+            //if class has generic parameters and has a static "of" or "from" method that takes either
+            // - a list
+            // - an iterable
+            return (Set<U>) createVavrSet(genericParam,clazz,path);
+        }else if(fieldType.equals(io.vavr.collection.Map.class)){
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
+            Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[1];
+            res = (Set<U>) createVavrMap(genericParamKey, genericParamValue, clazz, path);
             return res;
         } else {
             res = createCornerCasesForClass(fieldType, path);
@@ -246,6 +266,70 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
         res.add(singleElement);
         res.add(cornerCases);
 
+        return res;
+    }
+
+    private <T,U> Set<io.vavr.collection.List<T>> createVavrList(Class<T> clazz, Class<U> parent, Path path){
+        Set<io.vavr.collection.List<T>> res = Sets.newHashSet();
+        if(allowNullMap.getOrDefault(clazz,allowNull)){
+            res.add(null);
+        }
+        io.vavr.collection.List<T> cornerCases = io.vavr.collection.List.ofAll(createCornerCasesForGenericValue(clazz,parent,path));
+        io.vavr.collection.List<T> empty = io.vavr.collection.List.empty();
+        io.vavr.collection.List<T> single = io.vavr.collection.List.of(cornerCases.head());
+        res.add(cornerCases);
+        res.add(empty);
+        res.add(single);
+        return res;
+    }
+
+    private <T,U> Set<io.vavr.collection.Set<T>> createVavrSet(Class<T> clazz, Class<U> parent, Path path){
+        Set<io.vavr.collection.Set<T>> res = Sets.newHashSet();
+        if(allowNullMap.getOrDefault(clazz,allowNull)){
+            res.add(null);
+        }
+        io.vavr.collection.Set<T> cornerCases = io.vavr.collection.TreeSet.ofAll(new ArrayList(createCornerCasesForGenericValue(clazz,parent,path)));
+        io.vavr.collection.Set<T> empty = (io.vavr.collection.Set<T>) io.vavr.collection.List.empty().toSet();
+        io.vavr.collection.Set<T> single = io.vavr.collection.List.of(cornerCases.head()).toSet();
+        res.add(cornerCases);
+        res.add(empty);
+        res.add(single);
+        return res;
+    }
+
+    private <T,U,V> Set<io.vavr.collection.Map<T,U>> createVavrMap(Class<T> key, Class<U> value, Class<V> parent, Path path) {
+        Set<io.vavr.collection.Map<T,U>> res = Sets.newHashSet();
+        Random random = new Random();
+
+        Set<T> keys = createCornerCasesForGenericValue(key, parent, path);
+        Set<U> values = createCornerCasesForGenericValue(value, parent, path);
+
+        int maxSize = Math.max(keys.size(), values.size());
+        List<T> keyList = Lists.newArrayList(keys);
+        List<U> valueList = Lists.newArrayList(values);
+        List<T> keyListRandom = Lists.newArrayList(keys);
+        List<U> valueListRandom = Lists.newArrayList(values);
+        //seriously... what the fuck is this? Why is there not a zip function?
+        for (int i = keys.size(); i < maxSize; i++) {
+            keyList.add(keyListRandom.get(random.nextInt(keyListRandom.size()-1)));
+        }
+
+        for (int i = values.size(); i < maxSize; i++) {
+            valueList.add(valueListRandom.get(random.nextInt(valueListRandom.size()-1)));
+        }
+        io.vavr.collection.Map<T,U> empty = io.vavr.collection.HashMap.empty();
+        res.add(empty);
+        io.vavr.collection.Map<T,U> rest = io.vavr.collection.HashMap.empty();
+        for (int i = 0; i < maxSize; i++) {
+            rest.put(keyList.get(i),valueList.get(i));
+        }
+        res.add(rest);
+        if(allowNull){ // TODO: 13/09/2017 Verify that this is okay
+            res.add(null);
+        }
+
+
+        //cases: empty map, from all sorts of keys to all sorts of values
         return res;
     }
 
