@@ -9,7 +9,7 @@ import example.phasefour.Vehicle;
 import org.junit.runner.RunWith;
 import v2.generators.phasefour.*;
 
-import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(JUnitQuickcheck.class)
 public class PhaseFour {
@@ -51,7 +51,6 @@ public class PhaseFour {
     //field configuration
     @Property
     public void vehicleWithEvenNumberOfWheels(@From(VehicleGenerator.class) Vehicle vehicle){
-        System.out.println(vehicle);
         assertThat("even number of wheels",vehicle.getWheels() % 2 ==  0);
     }
 
@@ -60,13 +59,11 @@ public class PhaseFour {
     //predicates
     @Property
     public void vehicleWithPredicateNumberOfWheels(@From(VehiclePredicateGenerator.class) Vehicle vehicle){
-        System.out.println(vehicle);
         assertThat("event number of wheels",vehicle.getWheels() % 2 == 0);
     }
 
     @Property
-    public void vehicleWithTransformerNumberOfWheels(@From(VehiclePredicateGenerator.class) Vehicle vehicle){
-        System.out.println(vehicle);
+    public void vehicleWithTransformerNumberOfWheels(@From(VechileGeneratorTransformer.class) Vehicle vehicle){
         assertThat("Even number of wheels", vehicle.getWheels() % 2 == 0);
     }
 

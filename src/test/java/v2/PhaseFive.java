@@ -9,13 +9,15 @@ import example.phaseFive.Cat;
 import example.phaseTwo.Person;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import v2.exceptions.NoImplementationException;
+import v2.exceptions.RecursivePathException;
+import v2.exceptions.UnknownClassException;
 import v2.generators.phasefive.CatCombined;
 import v2.generators.phasefive.PersonCombined;
 import v2.generators.phasefive.RecursivePersonCombined;
 
 import java.util.Random;
 
-import static junit.framework.TestCase.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(JUnitQuickcheck.class)
@@ -43,7 +45,7 @@ public class PhaseFive {
         try{
             Person p = generator.generate(randomness,status);
         } catch (Exception e){
-            assertThat("Exception contains path and description", e.getMessage().contains("Path walked") && e.getMessage().contains("Don't know how to instantiate java.awt.Color"));
+            assertThat("Exception type is UnknownClassException", e instanceof UnknownClassException);
         }
     }
 
@@ -58,7 +60,7 @@ public class PhaseFive {
         try{
             example.phaseFive.Person p = generator.generate(randomness,status);
         } catch (Exception e){
-            assertThat("Error message contains recursive", e.getMessage().toLowerCase().contains("recursive"));
+            assertThat("Exception type is RecursivePathException", e instanceof RecursivePathException);
         }
     }
 
@@ -73,8 +75,7 @@ public class PhaseFive {
         try{
             Cat c = generator.generate(randomness,status);
         } catch (Exception e){
-            System.out.println(e.getMessage());
-            assertThat("Error message contains implementations", e.getMessage().toLowerCase().contains("implementations"));
+            assertThat("Exception type is NoImplementationException", e instanceof NoImplementationException);
         }
     }
 

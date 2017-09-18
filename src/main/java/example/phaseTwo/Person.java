@@ -11,4 +11,20 @@ public class Person {
 //    private Map<DayOfWeek,Pants> pantsByWeekday;
     private List<Socks> socks;
     private Set<Underpants> underpants;
+
+    public int getAge() {
+        return age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public List<Socks> getSocks() {
+        return socks;
+    }
+
+    public Set<Underpants> getUnderpants() {
+        return underpants;
+    }
 }

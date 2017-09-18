@@ -2,6 +2,10 @@ package v2;
 
 
 import io.vavr.control.Either;
+import v2.exceptions.CustomRuntimeException;
+import v2.exceptions.NoImplementationException;
+import v2.exceptions.RecursivePathException;
+import v2.exceptions.UnknownClassException;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -53,15 +57,15 @@ public class Utils {
         return candidate;
     }
 
-    public static <T> CustomRuntimeException createUnknownClassException(Class<T> clazz, Path path){
+    public static <T> v2.exceptions.CustomRuntimeException createUnknownClassException(Class<T> clazz, Path path){
         String pathMessage = path.getPathAsString();
         String message = String.format("Error: Don't know how to instantiate %s. Path walked: [%s] Class %s does not have a zeroArg constructor. Add a ClassCreator to the generator.", clazz.getName(), pathMessage, clazz.getName());
-        return new CustomRuntimeException(message);
+        return new UnknownClassException(message);
     }
 
     public static <T> RuntimeException createExceptionForPath(Class<T> clazz, Path path, Exception e){
-        if(e instanceof CustomRuntimeException){
-            return (CustomRuntimeException) e;
+        if(e instanceof v2.exceptions.CustomRuntimeException){
+            return (v2.exceptions.CustomRuntimeException) e;
         } else {
             String pathMessage = path.getPathAsString();
             String message = String.format("Error during creation of %s. Path walked: [%s] Error encountered: %s", clazz.toString(), pathMessage, e.getMessage());
@@ -69,16 +73,16 @@ public class Utils {
         }
     }
 
-    public static <T> CustomRuntimeException createRecursivePathException(Class<T> clazz, Path path){
+    public static <T> v2.exceptions.CustomRuntimeException createRecursivePathException(Class<T> clazz, Path path){
         String pathMessage = path.getPathAsString();
         String message = String.format("Error: Recursive path while processing %s. Path walked: [%s]", clazz.toString(), pathMessage);
-        return new CustomRuntimeException(message);
+        return new RecursivePathException(message);
     }
 
     public static <T> CustomRuntimeException createNoimplementationsForClassException(Class<T> clazz, Path path){
         String pathMessage = path.getPathAsString();
         String message = String.format("Error: No implementations for class %s. Path walked: [%s]", clazz.toString(), pathMessage);
-        return new CustomRuntimeException(message);
+        return new NoImplementationException(message);
     }
 
 }

@@ -14,4 +14,8 @@ public class Dime implements PantsContent {
                 "value=" + value +
                 '}';
     }
+
+    public int getValue() {
+        return value;
+    }
 }

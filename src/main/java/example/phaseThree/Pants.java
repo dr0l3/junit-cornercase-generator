@@ -17,4 +17,16 @@ public class Pants {
                 ", randomNess=" + randomNess +
                 '}';
     }
+
+    public List<PantsContent> getContents() {
+        return contents;
+    }
+
+    public Set<Smartphone> getPhones() {
+        return phones;
+    }
+
+    public Map<Float, Integer> getRandomNess() {
+        return randomNess;
+    }
 }

@@ -14,4 +14,8 @@ public class IPhone extends Smartphone{
                 "overPriced=" + overPriced +
                 '}';
     }
+
+    public boolean isOverPriced() {
+        return overPriced;
+    }
 }
