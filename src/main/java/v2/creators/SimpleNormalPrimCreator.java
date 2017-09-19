@@ -2,6 +2,7 @@ package v2.creators;
 
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
+import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class SimpleNormalPrimCreator implements PrimitiveCreatorSI {
@@ -89,6 +90,63 @@ public class SimpleNormalPrimCreator implements PrimitiveCreatorSI {
             return (T) nextByte(randomness);
         } else if (clazz.equals(Short.TYPE) || clazz.equals(Short.class)) {
             return (T) nextShort(randomness);
+        } else {
+            throw new RuntimeException("Invalid type " + clazz + " is not a primitive, and should not be instantiated from a primitive creator strategy");
+        }
+    }
+
+    @Override
+    public <T> T getArrayValuesForType(Class<T> clazz, SourceOfRandomness randomness) {
+        int size = randomness.nextInt(0,50); // TODO: 19/09/2017 Configure
+        if(clazz.equals(Integer.TYPE) || clazz.equals(Integer.class)) {
+            int[] arr = new int[size];
+            for (int i = 0; i < size; i++) {
+                int value = nextInt(randomness);
+                Arrays.fill(arr,i,i+1,value);
+            }
+            return (T) arr;
+        } else if(clazz.equals(Long.TYPE) || clazz.equals(Long.class)) {
+            long[] arr = new long[size];
+            for (int i = 0; i < size; i++) {
+                long value = nextLong(randomness);
+                Arrays.fill(arr,i,i+1,value);
+            }
+            return (T) arr;
+        } else if(clazz.equals(Double.TYPE) || clazz.equals(Double.class)) {
+            double[] arr = new double[size];
+            for (int i = 0; i < size; i++) {
+                double value = nextDouble(randomness);
+                Arrays.fill(arr,i,i+1,value);
+            }
+            return (T) arr;
+        } else if(clazz.equals(Float.TYPE) || clazz.equals(Float.class)) {
+            float[] arr = new float[size];
+            for (int i = 0; i < size; i++) {
+                float value = nextFloat(randomness);
+                Arrays.fill(arr,i,i+1,value);
+            }
+            return (T) arr;
+        } else if (clazz.equals(Boolean.TYPE) || clazz.equals(Boolean.class)){
+            boolean[] arr = new boolean[size];
+            for (int i = 0; i < size; i++) {
+                boolean value = nextBool(randomness);
+                Arrays.fill(arr,i,i+1,value);
+            }
+            return (T) arr;
+        } else if (clazz.equals(Byte.TYPE) || clazz.equals(Byte.class)){
+            byte[] arr = new byte[size];
+            for (int i = 0; i < size; i++) {
+                byte value = nextByte(randomness);
+                Arrays.fill(arr,i,i+1,value);
+            }
+            return (T) arr;
+        } else if (clazz.equals(Short.TYPE) || clazz.equals(Short.class)) {
+            short[] arr = new short[size];
+            for (int i = 0; i < size; i++) {
+                short value = nextShort(randomness);
+                Arrays.fill(arr,i,i+1,value);
+            }
+            return (T) arr;
         } else {
             throw new RuntimeException("Invalid type " + clazz + " is not a primitive, and should not be instantiated from a primitive creator strategy");
         }

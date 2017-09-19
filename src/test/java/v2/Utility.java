@@ -1,6 +1,6 @@
 package v2;
 
-public class PhaseSix {
+public class Utility {
     //Ergonomic e.i. utillity classes for creating simple creators
     /** Utility methods
      *  - Positive, negative, non-negative, non-positive, even, odd numbers

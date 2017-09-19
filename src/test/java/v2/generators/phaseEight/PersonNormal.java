@@ -2,10 +2,11 @@ package v2.generators.phaseEight;
 
 import example.phaseEight.Person;
 import v2.generators.CornerCaseGenerator;
+import v2.generators.NormalCaseGenerator;
 
-public class PersonCornerCase extends CornerCaseGenerator<Person> {
+public class PersonNormal extends NormalCaseGenerator<Person> {
 
-    public PersonCornerCase() {
+    public PersonNormal() {
         super(Person.class);
     }
 }

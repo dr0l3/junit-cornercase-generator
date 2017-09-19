@@ -10,6 +10,7 @@ import org.javatuples.Triplet;
 import v2.*;
 import v2.creators.*;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -125,10 +126,49 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal, ListCre
             Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[1];
             res = (U) createMap(genericParamKey, genericParamValue, clazz, randomness, path);
             return res;
+        } else if (fieldType.equals(io.vavr.collection.List.class)) {
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
+            res = (U) createVavrList(genericParamKey, clazz, randomness, path);
+            return res;
+        } else if (fieldType.equals(io.vavr.collection.Set.class)) {
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
+            res = (U) createVavrSet(genericParamKey, clazz, randomness, path);
+            return res;
+        } else if (fieldType.equals(io.vavr.collection.Map.class)) {
+            ParameterizedType genericType = (ParameterizedType) field.getGenericType();
+            Class<?> genericParamKey = (Class<?>) genericType.getActualTypeArguments()[0];
+            Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[1];
+            res = (U) createVavrMap(genericParamKey, genericParamValue, clazz, randomness, path);
+            return res;
+        }else if(fieldType.isArray()){
+            Class<?> genericParam = fieldType.getComponentType();
+            if(genericParam.isPrimitive()){
+                res = (U) createPrimitiveArray(genericParam,clazz,randomness, path);
+            } else {
+                res = (U) createNonPrimitiveArray(genericParam, clazz, randomness, path);
+            }
+
+            return res;
         }
 
         res = createInstance(fieldType, randomness, path);
         return res;
+    }
+
+    private<T,U> T createPrimitiveArray(Class<T> clazz, Class<U> parent, SourceOfRandomness randomness, Path path){
+        return (T) primitiveInClassInstMap.getOrDefault(clazz,defaultPrimitiveCreator).getArrayValuesForType(clazz,randomness);
+    }
+
+    private <T,U> T[] createNonPrimitiveArray(Class<T> clazz, Class<U> parent, SourceOfRandomness randomness, Path path){
+        int size = randomness.nextInt(0,50); // TODO: 19/09/2017 Configuration
+        T[] many = (T[]) Array.newInstance(clazz,size);
+        for (int i = 0; i < size; i++) {
+            T value = createInstance(clazz,randomness,path);
+            Arrays.fill(many,i, i+1, value);
+        }
+        return many;
     }
 
     @Override
@@ -137,6 +177,15 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal, ListCre
         List<T> res = Lists.newArrayList();
         for (int i = 0; i < size; i++) {
             res.add(createInstance(clazz, randomness, path));
+        }
+        return res;
+    }
+
+    public <T, U> io.vavr.collection.List<T> createVavrList(Class<T> clazz, Class<U> parent, SourceOfRandomness randomness, Path path) {
+        int size = randomness.nextInt(0, 50); // TODO: 14/09/2017 Configuration
+        io.vavr.collection.List<T> res = io.vavr.collection.List.empty();
+        for (int i = 0; i < size; i++) {
+            res = res.prepend(createInstance(clazz, randomness, path));
         }
         return res;
     }
@@ -153,12 +202,32 @@ public class SimpleNormalCaseInstantiator implements InstantiatorNormal, ListCre
         return res;
     }
 
+    public <T, U, V> io.vavr.collection.Map<T, U> createVavrMap(Class<T> keyClazz, Class<U> valueClazz, Class<V> parent, SourceOfRandomness randomness, Path path) {
+        int size = randomness.nextInt(0, 50); // TODO: 14/09/2017 Configuration
+        io.vavr.collection.Map<T, U> res = io.vavr.collection.HashMap.empty();
+        for (int i = 0; i < size; i++) {
+            T key = createInstance(keyClazz, randomness, path);
+            U value = createInstance(valueClazz, randomness, path);
+            res = res.put(key, value);
+        }
+        return res;
+    }
+
     @Override
     public <T, U> Set<T> createSet(Class<T> clazz, Class<U> parent, SourceOfRandomness randomness, Path path) {
         int size = randomness.nextInt(0, 50); // TODO: 14/09/2017 Configuration
         Set<T> res = Sets.newHashSet();
         for (int i = 0; i < size; i++) {
             res.add(createInstance(clazz, randomness, path));
+        }
+        return res;
+    }
+
+    public <T, U> io.vavr.collection.Set<T> createVavrSet(Class<T> clazz, Class<U> parent, SourceOfRandomness randomness, Path path) {
+        int size = randomness.nextInt(0, 50); // TODO: 14/09/2017 Configuration
+        io.vavr.collection.Set<T> res = io.vavr.collection.HashSet.empty();
+        for (int i = 0; i < size; i++) {
+            res = res.add(createInstance(clazz, randomness, path));
         }
         return res;
     }

@@ -3,8 +3,6 @@ package v2.instantiators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import io.vavr.control.Either;
-import io.vavr.control.Option;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import v2.*;
@@ -150,6 +148,15 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
             Class<?> genericParamValue = (Class<?>) genericType.getActualTypeArguments()[1];
             res = (Set<U>) createVavrMap(genericParamKey, genericParamValue, clazz, path);
             return res;
+        }else if(fieldType.isArray()){
+            Class<?> genericParam = fieldType.getComponentType();
+            if(genericParam.isPrimitive()){
+                res = (Set<U>) createPrimitiveArray(genericParam,clazz,path);
+            } else {
+                res = (Set<U>) createNonPrimitiveArray(genericParam, clazz, path);
+            }
+
+            return res;
         } else {
             res = createCornerCasesForClass(fieldType, path);
             if(allowNullMap.getOrDefault(clazz, allowNull)){
@@ -187,15 +194,11 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
 
     @Override
     public <T,U> Set<List<T>> createLists(Class<T> clazz, Class<U> parent, Path path) {
-        //cases: empty list, list with 1 element, list with 2 elements, list with duplicates, list with null element
         Set<List<T>> res = Sets.newHashSet();
 
         if(allowNullMap.getOrDefault(clazz, allowNull)){
-//            List<T> withNull = Arrays.asList(null);
-//            res.add(withNull);
             res.add(null);
         }
-
 
         Set<T> cornerCases = createCornerCasesForGenericValue(clazz, parent, path);
         T anElement = cornerCases.iterator().next();
@@ -208,6 +211,21 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
         res.add(withDuplicate);
         res.add(cornerCasesAsList);
 
+        return res;
+    }
+
+
+    private <T,U> Set<io.vavr.collection.List<T>> createVavrList(Class<T> clazz, Class<U> parent, Path path){
+        Set<io.vavr.collection.List<T>> res = Sets.newHashSet();
+        if(allowNullMap.getOrDefault(clazz,allowNull)){
+            res.add(null);
+        }
+        io.vavr.collection.List<T> cornerCases = io.vavr.collection.List.ofAll(createCornerCasesForGenericValue(clazz,parent,path));
+        io.vavr.collection.List<T> empty = io.vavr.collection.List.empty();
+        io.vavr.collection.List<T> single = io.vavr.collection.List.of(cornerCases.head());
+        res.add(cornerCases);
+        res.add(empty);
+        res.add(single);
         return res;
     }
 
@@ -269,20 +287,6 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
         return res;
     }
 
-    private <T,U> Set<io.vavr.collection.List<T>> createVavrList(Class<T> clazz, Class<U> parent, Path path){
-        Set<io.vavr.collection.List<T>> res = Sets.newHashSet();
-        if(allowNullMap.getOrDefault(clazz,allowNull)){
-            res.add(null);
-        }
-        io.vavr.collection.List<T> cornerCases = io.vavr.collection.List.ofAll(createCornerCasesForGenericValue(clazz,parent,path));
-        io.vavr.collection.List<T> empty = io.vavr.collection.List.empty();
-        io.vavr.collection.List<T> single = io.vavr.collection.List.of(cornerCases.head());
-        res.add(cornerCases);
-        res.add(empty);
-        res.add(single);
-        return res;
-    }
-
     private <T,U> Set<io.vavr.collection.Set<T>> createVavrSet(Class<T> clazz, Class<U> parent, Path path){
         Set<io.vavr.collection.Set<T>> res = Sets.newHashSet();
         if(allowNullMap.getOrDefault(clazz,allowNull)){
@@ -296,6 +300,8 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
         res.add(single);
         return res;
     }
+
+
 
     private <T,U,V> Set<io.vavr.collection.Map<T,U>> createVavrMap(Class<T> key, Class<U> value, Class<V> parent, Path path) {
         Set<io.vavr.collection.Map<T,U>> res = Sets.newHashSet();
@@ -333,6 +339,41 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
         return res;
     }
 
+    private<T,U> Set<T> createPrimitiveArray(Class<T> clazz, Class<U> parent, Path path){
+        Set<T[]> res = Sets.newHashSet();
+        if(allowNullMap.getOrDefault(clazz,allowNull)){
+            res.add(null);
+        }
+
+        return primitiveInClassInstMap.getOrDefault(clazz,defaultPrimitiveCreator).getArrayValuesForType(clazz);
+    }
+
+    private <T,U> Set<T[]> createNonPrimitiveArray(Class<T> clazz, Class<U> parent, Path path){
+        Set<T[]> res = Sets.newHashSet();
+        if(allowNullMap.getOrDefault(clazz,allowNull)){
+            res.add(null);
+        }
+        int size = 1;
+
+        T[] empty = (T[]) Array.newInstance(clazz,0);
+        Set<T> cornerCases = createCornerCasesForGenericValue(clazz,parent,path);
+        T[] single = (T[]) Array.newInstance(clazz,1);
+        Arrays.fill(single,cornerCases.iterator().next());
+        T[] many = (T[]) Array.newInstance(clazz,cornerCases.size());
+        Iterator<T> iter = cornerCases.iterator();
+        for (int i = 0; i < many.length; i++) {
+            Arrays.fill(many,i,i+1,iter.next());
+        }
+        res.add(empty);
+        res.add(single);
+        res.add(many);
+        return res;
+    }
+
+    private <T> T[] newArray(int length, T... arr){
+        return Arrays.copyOf(arr,length);
+    }
+
     private <T,U> Set<T> createCornerCasesForGenericValue(Class<T> clazz, Class<U> parent, Path path){
         // TODO: 14/09/2017 String? Nested generic value?
         if(Utils.isPrimitive(clazz)){
@@ -341,6 +382,8 @@ public class SimpleCornerCaseInstantiator implements InstantiatorCornerCase,List
             return createCornerCasesForClass(clazz, path);
         }
     }
+
+
 
     @Override
     public SimpleCornerCaseInstantiator withDefaultPrimitiveCreator(PrimitiveCreator creator) {

@@ -11,4 +11,5 @@ public interface PrimitiveCreator {
     Set<Float> getFloats();
     Set<Double> getDoubles();
     <T> Set<T> getValuesForType(Class<T> clazz);
+    <T> Set<T> getArrayValuesForType(Class<T> clazz);
 }

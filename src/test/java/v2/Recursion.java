@@ -1,6 +1,6 @@
 package v2;
 
-public class PhaseSeven {
+public class Recursion {
     //recursion
     /**
      * X -> X recursion

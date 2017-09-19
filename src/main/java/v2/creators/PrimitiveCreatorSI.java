@@ -13,4 +13,5 @@ public interface PrimitiveCreatorSI {
     Float nextFloat(SourceOfRandomness randomness);
     Double nextDouble(SourceOfRandomness randomness);
     <T> T getValueForType(Class<T> clazz, SourceOfRandomness randomness);
+    <T> T getArrayValuesForType(Class<T> clazz, SourceOfRandomness randomness);
 }
